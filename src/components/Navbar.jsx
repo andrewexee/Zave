@@ -36,7 +36,7 @@ export default function Navbar() {
                 to="/categories"
                 className={`px-4 py-2 rounded-lg text-sm font-medium transition-colors ${
                   isActive('/categories')
-                    ? 'bg-yellow-400 text-black'
+                    ? 'bg-orange-400 text-black'
                     : 'text-zinc-400 hover:text-white hover:bg-zinc-800'
                 }`}
               >
@@ -156,7 +156,7 @@ export default function Navbar() {
                 onClick={() => setMenuOpen(false)}
                 className={`px-4 py-3 rounded-lg text-sm font-medium transition-colors ${
                   isActive('/categories')
-                    ? 'bg-yellow-400 text-black'
+                    ? 'bg-orange-400 text-black'
                     : 'text-zinc-400 hover:text-white hover:bg-zinc-800'
                 }`}
               >

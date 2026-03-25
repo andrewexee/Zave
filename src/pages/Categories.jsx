@@ -87,7 +87,7 @@ export default function Categories() {
         </div>
         <button
           onClick={openCreate}
-          className="w-full sm:w-auto bg-yellow-400 hover:bg-yellow-300 text-black font-bold px-5 py-2.5 rounded-lg text-sm transition-colors"
+          className="w-full sm:w-auto bg-orange-400 hover:bg-orange-300 text-black font-bold px-5 py-2.5 rounded-lg text-sm transition-colors"
         >
           + Añadir categoría
         </button>
@@ -95,7 +95,7 @@ export default function Categories() {
 
       {loading ? (
         <div className="flex items-center justify-center py-20">
-          <span className="text-yellow-400 font-mono animate-pulse">Cargando...</span>
+          <span className="text-orange-400 font-mono animate-pulse">Cargando...</span>
         </div>
       ) : categories.length === 0 ? (
         <div className="flex flex-col items-center justify-center py-20 gap-3">
@@ -103,7 +103,7 @@ export default function Categories() {
           <p className="text-zinc-500">No hay categorías todavía.</p>
           <button
             onClick={openCreate}
-            className="mt-2 text-yellow-400 hover:text-yellow-300 text-sm underline"
+            className="mt-2 text-orange-400 hover:text-orange-300 text-sm underline"
           >
             Añadir la primera
           </button>
@@ -134,7 +134,7 @@ export default function Categories() {
                 >
                   <td className="px-3 md:px-4 py-3">
                     <div className="flex items-center gap-2">
-                      <span className="w-2 h-2 rounded-full bg-yellow-400 shrink-0" />
+                      <span className="w-2 h-2 rounded-full bg-orange-400 shrink-0" />
                       <span className="text-white font-medium">{c.name}</span>
                     </div>
                   </td>
@@ -147,13 +147,13 @@ export default function Categories() {
                     <div className="flex items-center justify-center gap-1 md:gap-2">
                       <button
                         onClick={() => openEdit(c)}
-                        className="text-xs px-2 md:px-3 py-1.5 rounded-lg bg-zinc-800 text-zinc-300 hover:bg-yellow-400 hover:text-black transition-colors font-medium"
+                        className="text-xs px-2 md:px-3 py-1.5 rounded-lg bg-zinc-800 text-zinc-300 hover:bg-orange-400 hover:text-black transition-colors font-medium"
                       >
                         Editar
                       </button>
                       <button
                         onClick={() => handleDelete(c.id)}
-                        className="text-xs px-2 md:px-3 py-1.5 rounded-lg bg-zinc-800 text-zinc-300 hover:bg-orange-500 hover:text-white transition-colors font-medium"
+                        className="text-xs px-2 md:px-3 py-1.5 rounded-lg bg-zinc-800 text-zinc-300 hover:bg-red-500 hover:text-white transition-colors font-medium"
                       >
                         Eliminar
                       </button>
@@ -185,7 +185,7 @@ export default function Categories() {
                   value={name}
                   onChange={(e) => setName(e.target.value)}
                   placeholder="Ej: Lácteos"
-                  className="bg-zinc-800 text-white rounded-lg px-4 py-3 text-sm outline-none border border-zinc-700 focus:border-yellow-400 transition-colors placeholder-zinc-600"
+                  className="bg-zinc-800 text-white rounded-lg px-4 py-3 text-sm outline-none border border-zinc-700 focus:border-orange-400 transition-colors placeholder-zinc-600"
                 />
               </div>
 
@@ -205,7 +205,7 @@ export default function Categories() {
                 <button
                   onClick={handleSave}
                   disabled={saving}
-                  className="flex-1 py-3 rounded-lg bg-yellow-400 hover:bg-yellow-300 text-black font-bold text-sm transition-colors disabled:opacity-50"
+                  className="flex-1 py-3 rounded-lg bg-orange-400 hover:bg-orange-300 text-black font-bold text-sm transition-colors disabled:opacity-50"
                 >
                   {saving ? 'Guardando...' : 'Guardar'}
                 </button>
