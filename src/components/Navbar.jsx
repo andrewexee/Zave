@@ -10,7 +10,7 @@ export default function Navbar() {
   const isActive = (path) => location.pathname === path;
 
   return (
-    <nav className="bg-zinc-900 border-b border-zinc-800 px-4 md:px-6 py-4">
+    <nav className="bg-zinc-900 border-b border-zinc-800 px-4 md:px-6 py-4  pt-[safe-area-inset-top]">
       <div className="flex items-center justify-between">
 
         {/* Lado Izquierdo: Logo (Flex-1 para empujar al centro) */}

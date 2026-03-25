@@ -1,3 +1,13 @@
 @tailwind base;
 @tailwind components;
 @tailwind utilities;
+
+:root {
+  /* Forzamos el valor. Si env() falla, usaremos 44px que es el estándar del notch */
+  --sat: env(safe-area-inset-top, 44px);
+}
+
+/* Si prefieres aplicarlo solo al Nav y no a todo el body: */
+nav {
+  padding-top: var(--sat) !important;
+}
