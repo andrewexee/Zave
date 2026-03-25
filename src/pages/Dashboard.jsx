@@ -58,10 +58,15 @@ export default function Dashboard() {
     return matchesSearch && matchesCategory;
   });
 
-  const getCheapest = (productId) => {
-    const list = prices.filter((p) => p.product_id === productId);
-    if (list.length === 0) return null;
-    return list.reduce((min, p) => (p.price < min.price ? p : min));
+  // NUEVA LÓGICA DE PRECIOS PARA MANEJAR EMPATES
+  const getPriceAnalysis = (productId) => {
+    const productPricesList = prices.filter((p) => p.product_id === productId);
+    if (productPricesList.length === 0) return { minPrice: null, count: 0 };
+
+    const minPrice = Math.min(...productPricesList.map(p => parseFloat(p.price)));
+    const count = productPricesList.filter(p => parseFloat(p.price) === minPrice).length;
+
+    return { minPrice, count };
   };
 
   const formatWeight = (grams) => {
@@ -184,7 +189,7 @@ export default function Dashboard() {
 
   return (
     <div className="min-h-screen bg-black px-4 md:px-6 py-6 md:py-8">
-      {/* REFERENCIA ESTÁTICA PARA TAILWIND (No borrar) */}
+      {/* REFERENCIA ESTÁTICA PARA TAILWIND */}
       <div className="hidden text-yellow-400 text-orange-400 text-green-400 text-blue-500 text-purple-500 border-yellow-400/20 border-orange-400/20 border-green-400/20 border-blue-500/20 border-purple-500/20 bg-yellow-400/10 bg-orange-400/10 bg-green-400/10 bg-blue-500/10 bg-purple-500/10"></div>
 
       {/* Cabecera */}
@@ -271,7 +276,8 @@ export default function Dashboard() {
             </thead>
             <tbody>
               {filteredProducts.map((product, i) => {
-                const cheapest = getCheapest(product.id);
+                // Obtenemos el análisis de precios para este producto
+                const { minPrice, count } = getPriceAnalysis(product.id);
                 const catColor = product.categories?.color || 'yellow-400';
                 
                 return (
@@ -304,12 +310,20 @@ export default function Dashboard() {
                       )}
                     </td>
                     {supermarkets.map((s) => {
-                      const isCheapest = cheapest?.supermarket_id === s.id;
                       const priceEntry = prices.find((p) => p.product_id === product.id && p.supermarket_id === s.id);
+                      const currentPrice = priceEntry ? parseFloat(priceEntry.price) : null;
+                      
+                      // Lógica de colores condicional:
+                      let priceColorClass = 'text-zinc-300';
+                      if (currentPrice !== null && currentPrice === minPrice) {
+                        // Si hay más de uno con el mismo precio mínimo -> Amarillo. Si no -> Verde.
+                        priceColorClass = count > 1 ? 'text-yellow-400' : 'text-green-400';
+                      }
+
                       return (
                         <td key={s.id} className="px-4 py-3 text-center whitespace-nowrap">
                           {priceEntry ? (
-                            <span className={`font-mono font-semibold ${isCheapest ? 'text-green-400' : 'text-zinc-300'}`}>
+                            <span className={`font-mono font-semibold ${priceColorClass}`}>
                               {parseFloat(priceEntry.price).toFixed(2)} €
                             </span>
                           ) : (
