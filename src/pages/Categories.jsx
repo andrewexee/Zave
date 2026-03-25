@@ -8,8 +8,17 @@ export default function Categories() {
   const [showModal, setShowModal] = useState(false);
   const [editing, setEditing] = useState(null);
   const [name, setName] = useState('');
+  const [selectedColor, setSelectedColor] = useState('yellow-400');
   const [saving, setSaving] = useState(false);
   const [error, setError] = useState('');
+
+  const colorOptions = [
+    { name: 'Amarillo', class: 'bg-yellow-400', value: 'yellow-400' },
+    { name: 'Naranja', class: 'bg-orange-400', value: 'orange-400' },
+    { name: 'Verde', class: 'bg-green-400', value: 'green-400' },
+    { name: 'Azul', class: 'bg-blue-500', value: 'blue-500' },
+    { name: 'Morado', class: 'bg-purple-500', value: 'purple-500' },
+  ];
 
   const fetchCategories = async () => {
     setLoading(true);
@@ -26,6 +35,7 @@ export default function Categories() {
   const openCreate = () => {
     setEditing(null);
     setName('');
+    setSelectedColor('yellow-400');
     setError('');
     setShowModal(true);
   };
@@ -33,6 +43,7 @@ export default function Categories() {
   const openEdit = (category) => {
     setEditing(category);
     setName(category.name);
+    setSelectedColor(category.color || 'yellow-400');
     setError('');
     setShowModal(true);
   };
@@ -45,22 +56,27 @@ export default function Categories() {
     setSaving(true);
     setError('');
 
+    const payload = { 
+      name: name.trim(),
+      color: selectedColor 
+    };
+
     if (editing) {
       const { error } = await supabase
         .from('categories')
-        .update({ name: name.trim() })
+        .update(payload)
         .eq('id', editing.id);
       if (error) {
-        setError('Ya existe una categoría con ese nombre.');
+        setError('Error al actualizar la categoría.');
         setSaving(false);
         return;
       }
     } else {
       const { error } = await supabase
         .from('categories')
-        .insert({ name: name.trim() });
+        .insert(payload);
       if (error) {
-        setError('Ya existe una categoría con ese nombre.');
+        setError('Error al crear la categoría.');
         setSaving(false);
         return;
       }
@@ -79,6 +95,8 @@ export default function Categories() {
 
   return (
     <div className="min-h-screen bg-black px-4 md:px-6 py-6 md:py-8">
+      {/* REFERENCIA ESTÁTICA PARA TAILWIND (No borrar) */}
+      <div className="hidden bg-yellow-400 bg-orange-400 bg-green-400 bg-blue-500 bg-purple-500 text-yellow-400 text-orange-400 text-green-400 text-blue-500 text-purple-500 border-yellow-400/20 border-orange-400/20 border-green-400/20 border-blue-500/20 border-purple-500/20 bg-yellow-400/10 bg-orange-400/10 bg-green-400/10 bg-blue-500/10 bg-purple-500/10"></div>
 
       <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-4 mb-6 md:mb-8">
         <div>
@@ -113,6 +131,7 @@ export default function Categories() {
           <table className="w-full text-sm min-w-[300px]">
             <thead>
               <tr className="border-b border-zinc-800">
+                <th className="w-10 px-0 py-3 bg-zinc-900"></th>
                 <th className="text-left text-zinc-400 font-medium px-3 md:px-4 py-3 bg-zinc-900">
                   Nombre
                 </th>
@@ -132,11 +151,11 @@ export default function Categories() {
                     i % 2 === 0 ? 'bg-black' : 'bg-zinc-950'
                   }`}
                 >
+                  <td className="pl-4 py-3 w-4">
+                    <span className={`w-2 h-2 rounded-full block bg-${c.color || 'yellow-400'}`} />
+                  </td>
                   <td className="px-3 md:px-4 py-3">
-                    <div className="flex items-center gap-2">
-                      <span className="w-2 h-2 rounded-full bg-orange-400 shrink-0" />
-                      <span className="text-white font-medium">{c.name}</span>
-                    </div>
+                    <span className="text-white font-medium">{c.name}</span>
                   </td>
                   <td className="px-3 md:px-4 py-3 hidden sm:table-cell">
                     <span className="text-zinc-500 text-xs font-mono">
@@ -169,15 +188,12 @@ export default function Categories() {
       {showModal && (
         <div className="fixed inset-0 bg-black/80 flex items-end sm:items-center justify-center z-50 px-0 sm:px-4">
           <div className="bg-zinc-900 border border-zinc-800 rounded-t-2xl sm:rounded-2xl p-6 md:p-8 w-full sm:max-w-md">
-
             <h3 className="text-white text-lg font-bold mb-6">
               {editing ? 'Editar categoría' : 'Nueva categoría'}
             </h3>
-
             <div className="flex flex-col gap-4">
-
               <div className="flex flex-col gap-1">
-                <label className="text-zinc-400 text-xs uppercase tracking-widest">
+                <label className="text-zinc-400 text-xs uppercase tracking-widest font-bold">
                   Nombre
                 </label>
                 <input
@@ -187,6 +203,25 @@ export default function Categories() {
                   placeholder="Ej: Lácteos"
                   className="bg-zinc-800 text-white rounded-lg px-4 py-3 text-sm outline-none border border-zinc-700 focus:border-orange-400 transition-colors placeholder-zinc-600"
                 />
+              </div>
+
+              <div className="flex flex-col gap-2">
+                <label className="text-zinc-400 text-xs uppercase tracking-widest font-bold">
+                  Color distintivo
+                </label>
+                <div className="flex items-center gap-4 py-2">
+                  {colorOptions.map((option) => (
+                    <button
+                      key={option.value}
+                      onClick={() => setSelectedColor(option.value)}
+                      className={`w-8 h-8 rounded-full border-2 transition-all ${
+                        selectedColor === option.value 
+                          ? 'border-white scale-125 ring-2 ring-zinc-700' 
+                          : 'border-transparent opacity-40 hover:opacity-100'
+                      } ${option.class}`}
+                    />
+                  ))}
+                </div>
               </div>
 
               {error && (
@@ -210,12 +245,10 @@ export default function Categories() {
                   {saving ? 'Guardando...' : 'Guardar'}
                 </button>
               </div>
-
             </div>
           </div>
         </div>
       )}
-
     </div>
   );
 }

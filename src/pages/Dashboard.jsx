@@ -29,7 +29,7 @@ export default function Dashboard() {
   const fetchData = async () => {
     setLoading(true);
     const [{ data: prods }, { data: supers }, { data: cats }, { data: prics }] = await Promise.all([
-      supabase.from('products').select('*, categories(name)').order('name'),
+      supabase.from('products').select('*, categories(name, color)').order('name'),
       supabase.from('supermarkets').select('*').order('name'),
       supabase.from('categories').select('*').order('name'),
       supabase.from('product_prices').select('*'),
@@ -184,6 +184,8 @@ export default function Dashboard() {
 
   return (
     <div className="min-h-screen bg-black px-4 md:px-6 py-6 md:py-8">
+      {/* REFERENCIA ESTÁTICA PARA TAILWIND (No borrar) */}
+      <div className="hidden text-yellow-400 text-orange-400 text-green-400 text-blue-500 text-purple-500 border-yellow-400/20 border-orange-400/20 border-green-400/20 border-blue-500/20 border-purple-500/20 bg-yellow-400/10 bg-orange-400/10 bg-green-400/10 bg-blue-500/10 bg-purple-500/10"></div>
 
       {/* Cabecera */}
       <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-4 mb-4 md:mb-6">
@@ -270,15 +272,16 @@ export default function Dashboard() {
             <tbody>
               {filteredProducts.map((product, i) => {
                 const cheapest = getCheapest(product.id);
+                const catColor = product.categories?.color || 'yellow-400';
+                
                 return (
                   <tr key={product.id} className={`border-b border-zinc-800 transition-colors hover:bg-zinc-900/30 ${i % 2 === 0 ? 'bg-black' : 'bg-zinc-950'}`}>
                     <td className="px-4 py-3">
                       <span className="text-white font-medium block">{product.name}</span>
                       {product.description && <p className="text-zinc-500 text-xs mt-0.5">{product.description}</p>}
-                      {/* Categoría visible SOLO en móvil (debajo del nombre) */}
                       {product.categories && (
                         <div className="mt-1.5 md:hidden">
-                           <span className="text-[10px] font-medium px-1.5 py-0.5 rounded bg-yellow-400/10 text-yellow-400 border border-yellow-400/20">
+                           <span className={`text-[10px] font-medium px-1.5 py-0.5 rounded border whitespace-nowrap bg-${catColor}/10 text-${catColor} border-${catColor}/20`}>
                             {product.categories.name}
                           </span>
                         </div>
@@ -293,7 +296,7 @@ export default function Dashboard() {
                     </td>
                     <td className="px-4 py-3 hidden md:table-cell">
                       {product.categories ? (
-                        <span className="text-xs font-medium px-2 py-1 rounded-md bg-yellow-400/10 text-yellow-400 border border-yellow-400/20 whitespace-nowrap">
+                        <span className={`text-xs font-medium px-2 py-1 rounded-md border whitespace-nowrap bg-${catColor}/10 text-${catColor} border-${catColor}/20`}>
                           {product.categories.name}
                         </span>
                       ) : (
