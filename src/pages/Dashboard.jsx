@@ -10,6 +10,11 @@ export default function Dashboard() {
   const [prices, setPrices] = useState([]);
   const [loading, setLoading] = useState(true);
 
+  // Filtros
+  const [search, setSearch] = useState('');
+  const [selectedCategory, setSelectedCategory] = useState('');
+
+  // Modal estados
   const [showModal, setShowModal] = useState(false);
   const [editingProduct, setEditingProduct] = useState(null);
   const [productName, setProductName] = useState('');
@@ -40,6 +45,20 @@ export default function Dashboard() {
 
   useEffect(() => { fetchData(); }, []);
 
+  // Productos filtrados por búsqueda y categoría
+  const filteredProducts = products.filter((p) => {
+    const matchesSearch =
+      search.trim() === '' ||
+      p.name.toLowerCase().includes(search.toLowerCase()) ||
+      (p.description && p.description.toLowerCase().includes(search.toLowerCase()));
+
+    const matchesCategory =
+      selectedCategory === '' ||
+      String(p.category_id) === selectedCategory;
+
+    return matchesSearch && matchesCategory;
+  });
+
   const getCheapest = (productId) => {
     const list = prices.filter((p) => p.product_id === productId);
     if (list.length === 0) return null;
@@ -68,7 +87,6 @@ export default function Dashboard() {
     setEditingProduct(product);
     setProductName(product.name);
     setProductDescription(product.description ?? '');
-    // Mostrar el peso almacenado en gramos, el usuario puede cambiar la unidad si quiere
     setProductWeight(product.weight_grams ?? '');
     setProductWeightUnit('g');
     setProductCategory(product.category_id ?? '');
@@ -87,7 +105,6 @@ export default function Dashboard() {
       return;
     }
 
-    // Conversión de peso a gramos antes de guardar
     let weightInGrams = null;
     if (productWeight !== '' && productWeight !== null) {
       const rawWeight = parseFloat(productWeight);
@@ -146,33 +163,71 @@ export default function Dashboard() {
   return (
     <div className="min-h-screen bg-black px-4 md:px-6 py-6 md:py-8">
 
-      <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-4 mb-6 md:mb-8">
-        <div>
+      {/* Cabecera: título | filtro categoría | botón añadir */}
+      <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-4 mb-4 md:mb-6">
+
+        {/* Título */}
+        <div className="shrink-0">
           <h2 className="text-white text-xl md:text-2xl font-bold">Productos</h2>
           <p className="text-zinc-500 text-sm mt-1">Comparativa de precios por supermercado</p>
         </div>
+
+        {/* Filtro categoría — centrado */}
+        <div className="flex-1 flex justify-center px-0 sm:px-4">
+          <select
+            value={selectedCategory}
+            onChange={(e) => setSelectedCategory(e.target.value)}
+            className="w-full sm:w-56 bg-zinc-900 text-zinc-300 rounded-lg px-4 py-2.5 text-sm outline-none border border-zinc-700 focus:border-yellow-400 transition-colors"
+          >
+            <option value="">Todas</option>
+            {categories.map((c) => (
+              <option key={c.id} value={String(c.id)}>{c.name}</option>
+            ))}
+          </select>
+        </div>
+
+        {/* Botón añadir */}
         {canEdit && (
           <button
             onClick={openCreate}
-            className="w-full sm:w-auto bg-yellow-400 hover:bg-yellow-300 text-black font-bold px-5 py-2.5 rounded-lg text-sm transition-colors"
+            className="shrink-0 w-full sm:w-auto bg-yellow-400 hover:bg-yellow-300 text-black font-bold px-5 py-2.5 rounded-lg text-sm transition-colors"
           >
             + Añadir producto
           </button>
         )}
+
       </div>
 
+      {/* Barra de búsqueda */}
+      <div className="mb-4 md:mb-6">
+        <input
+          type="text"
+          value={search}
+          onChange={(e) => setSearch(e.target.value)}
+          placeholder="Buscar producto por nombre o descripción..."
+          className="w-full bg-zinc-900 text-white rounded-lg px-4 py-3 text-sm outline-none border border-zinc-700 focus:border-yellow-400 transition-colors placeholder-zinc-600"
+        />
+      </div>
+
+      {/* Tabla */}
       {loading ? (
         <div className="flex items-center justify-center py-20">
           <span className="text-yellow-400 font-mono animate-pulse">Cargando...</span>
         </div>
-      ) : products.length === 0 ? (
+      ) : filteredProducts.length === 0 ? (
         <div className="flex flex-col items-center justify-center py-20 gap-3">
           <span className="text-zinc-600 text-4xl">🛒</span>
-          <p className="text-zinc-500">No hay productos todavía.</p>
-          {canEdit && (
-            <button onClick={openCreate} className="mt-2 text-yellow-400 hover:text-yellow-300 text-sm underline">
-              Añadir el primero
-            </button>
+          {products.length === 0 ? (
+            <>
+              <p className="text-zinc-500">No hay productos todavía.</p>
+              {canEdit && (
+                <button onClick={openCreate} className="mt-2 text-yellow-400 hover:text-yellow-300 text-sm underline">
+                  Añadir el primero
+                </button>
+              )}
+            </>
+          ) : (
+            <p className="text-zinc-500">No se encontraron productos con ese filtro.</p>
           )}
         </div>
       ) : (
@@ -202,7 +257,7 @@ export default function Dashboard() {
               </tr>
             </thead>
             <tbody>
-              {products.map((product, i) => {
+              {filteredProducts.map((product, i) => {
                 const cheapest = getCheapest(product.id);
                 return (
                   <tr
@@ -317,7 +372,6 @@ export default function Dashboard() {
 
               <div className="flex gap-3">
 
-                {/* Peso + unidad */}
                 <div className="flex flex-col gap-1 flex-1">
                   <label className="text-zinc-400 text-xs uppercase tracking-widest">
                     Peso <span className="text-zinc-600 normal-case">(opcional)</span>
@@ -342,7 +396,6 @@ export default function Dashboard() {
                   </div>
                 </div>
 
-                {/* Categoría */}
                 <div className="flex flex-col gap-1 flex-1">
                   <label className="text-zinc-400 text-xs uppercase tracking-widest">
                     Categoría <span className="text-zinc-600 normal-case">(opcional)</span>
