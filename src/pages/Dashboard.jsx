@@ -167,9 +167,8 @@ export default function Dashboard() {
 
         {/* Selector categoría con icono */}
         <div className="flex-1 flex justify-center px-0 sm:px-4">
-          <div className="relative w-full sm:w-56">
+          <div className="relative w-full sm:w-36">
             <span className="absolute left-3 top-1/2 -translate-y-1/2 text-zinc-500 pointer-events-none">
-              {/* Icono etiqueta */}
               <svg xmlns="http://www.w3.org/2000/svg" className="w-4 h-4" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
                 <path d="M20.59 13.41l-7.17 7.17a2 2 0 0 1-2.83 0L2 12V2h10l8.59 8.59a2 2 0 0 1 0 2.82z"/>
                 <line x1="7" y1="7" x2="7.01" y2="7"/>
@@ -180,7 +179,7 @@ export default function Dashboard() {
               onChange={(e) => setSelectedCategory(e.target.value)}
               className="w-full bg-zinc-900 text-zinc-300 rounded-lg pl-9 pr-4 py-2.5 text-sm outline-none border border-zinc-700 focus:border-yellow-400 transition-colors appearance-none"
             >
-              <option value="">Todas las categorías</option>
+              <option value="" className="justify-center">Todas</option>
               {categories.map((c) => (
                 <option key={c.id} value={String(c.id)}>{c.name}</option>
               ))}
@@ -198,11 +197,10 @@ export default function Dashboard() {
         )}
       </div>
 
-      {/* Barra de búsqueda con icono lupa */}
+      {/* Barra de búsqueda */}
       <div className="mb-4 md:mb-6">
         <div className="relative">
           <span className="absolute left-4 top-1/2 -translate-y-1/2 text-zinc-500 pointer-events-none">
-            {/* Icono lupa */}
             <svg xmlns="http://www.w3.org/2000/svg" className="w-4 h-4" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
               <circle cx="11" cy="11" r="8"/>
               <line x1="21" y1="21" x2="16.65" y2="16.65"/>
@@ -241,27 +239,25 @@ export default function Dashboard() {
         </div>
       ) : (
         <div className="overflow-x-auto rounded-xl border border-zinc-800">
-          <table className="w-full text-sm min-w-[300px]">
+          <table className="w-full text-sm min-w-max">
             <thead>
               <tr className="border-b border-zinc-800">
-                <th className="text-left text-zinc-400 font-medium px-3 md:px-4 py-3 bg-zinc-900">
+                <th className="text-left text-zinc-400 font-medium px-4 py-3 bg-zinc-900">
                   Producto
                 </th>
-                {/* Peso: columna propia en móvil y desktop */}
-                <th className="text-left text-zinc-400 font-medium px-3 md:px-4 py-3 bg-zinc-900">
+                <th className="text-left text-zinc-400 font-medium px-4 py-3 bg-zinc-900 whitespace-nowrap">
                   Peso
                 </th>
-                {/* Categoría: columna solo en desktop */}
-                <th className="text-left text-zinc-400 font-medium px-3 md:px-4 py-3 bg-zinc-900 hidden md:table-cell">
+                <th className="text-left text-zinc-400 font-medium px-4 py-3 bg-zinc-900 hidden md:table-cell">
                   Categoría
                 </th>
                 {supermarkets.map((s) => (
-                  <th key={s.id} className="text-center text-zinc-400 font-medium px-3 md:px-4 py-3 bg-zinc-900 whitespace-nowrap">
+                  <th key={s.id} className="text-center text-zinc-400 font-medium px-4 py-3 bg-zinc-900 whitespace-nowrap">
                     {s.name}
                   </th>
                 ))}
                 {canEdit && (
-                  <th className="text-center text-zinc-400 font-medium px-3 md:px-4 py-3 bg-zinc-900">
+                  <th className="text-center text-zinc-400 font-medium px-4 py-3 bg-zinc-900">
                     Acciones
                   </th>
                 )}
@@ -277,13 +273,11 @@ export default function Dashboard() {
                       i % 2 === 0 ? 'bg-black' : 'bg-zinc-950'
                     }`}
                   >
-                    {/* Celda producto: nombre + descripción + categoría en móvil */}
-                    <td className="px-3 md:px-4 py-3">
+                    <td className="px-4 py-3 min-w-[150px]">
                       <span className="text-white font-medium">{product.name}</span>
                       {product.description && (
                         <p className="text-zinc-500 text-xs mt-0.5">{product.description}</p>
                       )}
-                      {/* Categoría solo visible en móvil dentro de esta celda */}
                       {product.categories && (
                         <div className="mt-1.5 md:hidden">
                           <span className="text-xs font-medium px-2 py-0.5 rounded-md bg-yellow-400/10 text-yellow-400 border border-yellow-400/20">
@@ -293,8 +287,7 @@ export default function Dashboard() {
                       )}
                     </td>
 
-                    {/* Celda peso: visible siempre como columna propia */}
-                    <td className="px-3 md:px-4 py-3">
+                    <td className="px-4 py-3 whitespace-nowrap">
                       {product.weight_grams ? (
                         <span className="text-zinc-300 font-mono text-xs">
                           {formatWeight(product.weight_grams)}
@@ -304,10 +297,9 @@ export default function Dashboard() {
                       )}
                     </td>
 
-                    {/* Categoría como columna solo en desktop */}
-                    <td className="px-3 md:px-4 py-3 hidden md:table-cell">
+                    <td className="px-4 py-3 hidden md:table-cell">
                       {product.categories ? (
-                        <span className="text-xs font-medium px-2 py-1 rounded-md bg-yellow-400/10 text-yellow-400 border border-yellow-400/20">
+                        <span className="text-xs font-medium px-2 py-1 rounded-md bg-yellow-400/10 text-yellow-400 border border-yellow-400/20 whitespace-nowrap">
                           {product.categories.name}
                         </span>
                       ) : (
@@ -321,7 +313,7 @@ export default function Dashboard() {
                         (p) => p.product_id === product.id && p.supermarket_id === s.id
                       );
                       return (
-                        <td key={s.id} className="px-3 md:px-4 py-3 text-center">
+                        <td key={s.id} className="px-4 py-3 text-center whitespace-nowrap">
                           {priceEntry ? (
                             <span className={`font-mono font-semibold ${isCheapest ? 'text-green-400' : 'text-zinc-300'}`}>
                               {parseFloat(priceEntry.price).toFixed(2)} €
@@ -333,17 +325,17 @@ export default function Dashboard() {
                       );
                     })}
                     {canEdit && (
-                      <td className="px-3 md:px-4 py-3 text-center">
-                        <div className="flex items-center justify-center gap-1 md:gap-2">
+                      <td className="px-4 py-3 text-center">
+                        <div className="flex items-center justify-center gap-2">
                           <button
                             onClick={() => openEdit(product)}
-                            className="text-xs px-2 md:px-3 py-1.5 rounded-lg bg-zinc-800 text-zinc-300 hover:bg-yellow-400 hover:text-black transition-colors font-medium"
+                            className="text-xs px-3 py-1.5 rounded-lg bg-zinc-800 text-zinc-300 hover:bg-yellow-400 hover:text-black transition-colors font-medium"
                           >
                             Editar
                           </button>
                           <button
                             onClick={() => handleDelete(product.id)}
-                            className="text-xs px-2 md:px-3 py-1.5 rounded-lg bg-zinc-800 text-zinc-300 hover:bg-orange-500 hover:text-white transition-colors font-medium"
+                            className="text-xs px-3 py-1.5 rounded-lg bg-zinc-800 text-zinc-300 hover:bg-orange-500 hover:text-white transition-colors font-medium"
                           >
                             Eliminar
                           </button>
