@@ -1,5 +1,6 @@
 import { useEffect, useState } from 'react';
 import supabase from '../supabaseClient';
+import { Pencil, Trash2 } from 'lucide-react'; // Importación de Lucide
 
 export default function Categories() {
   const [categories, setCategories] = useState([]);
@@ -95,7 +96,7 @@ export default function Categories() {
 
   return (
     <div className="min-h-screen bg-black px-4 md:px-6 py-6 md:py-8">
-      {/* REFERENCIA ESTÁTICA PARA TAILWIND (No borrar) */}
+      {/* REFERENCIA ESTÁTICA PARA TAILWIND */}
       <div className="hidden bg-yellow-400 bg-orange-400 bg-green-400 bg-blue-500 bg-purple-500 text-yellow-400 text-orange-400 text-green-400 text-blue-500 text-purple-500 border-yellow-400/20 border-orange-400/20 border-green-400/20 border-blue-500/20 border-purple-500/20 bg-yellow-400/10 bg-orange-400/10 bg-green-400/10 bg-blue-500/10 bg-purple-500/10"></div>
 
       <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-4 mb-6 md:mb-8">
@@ -166,15 +167,15 @@ export default function Categories() {
                     <div className="flex items-center justify-center gap-1 md:gap-2">
                       <button
                         onClick={() => openEdit(c)}
-                        className="text-xs px-2 md:px-3 py-1.5 rounded-lg bg-zinc-800 text-zinc-300 hover:bg-orange-400 hover:text-black transition-colors font-medium"
+                        className="p-2 rounded-lg bg-zinc-800 text-zinc-400 hover:text-orange-400 hover:bg-orange-400/10 transition-colors"
                       >
-                        Editar
+                        <Pencil size={16} />
                       </button>
                       <button
                         onClick={() => handleDelete(c.id)}
-                        className="text-xs px-2 md:px-3 py-1.5 rounded-lg bg-zinc-800 text-zinc-300 hover:bg-red-500 hover:text-white transition-colors font-medium"
+                        className="p-2 rounded-lg bg-zinc-800 text-zinc-400 hover:text-red-500 hover:bg-red-500/10 transition-colors"
                       >
-                        Eliminar
+                        <Trash2 size={16} />
                       </button>
                     </div>
                   </td>

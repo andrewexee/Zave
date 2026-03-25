@@ -1,6 +1,7 @@
 import { useEffect, useState } from 'react';
 import supabase from '../supabaseClient';
 import { useAuth } from '../context/AuthContext';
+import { Pencil, Trash2 } from 'lucide-react';
 
 export default function Admin() {
   const { profile: currentProfile } = useAuth();
@@ -136,14 +137,14 @@ export default function Admin() {
                         onClick={() => openEdit(u)}
                         className="text-xs px-2 md:px-3 py-1.5 rounded-lg bg-zinc-800 text-zinc-300 hover:bg-orange-400 hover:text-black transition-colors font-medium"
                       >
-                        Editar
+                        <Pencil size={16} />
                       </button>
                       <button
                         onClick={() => handleDelete(u.id)}
                         disabled={u.id === currentProfile?.id}
                         className="text-xs px-2 md:px-3 py-1.5 rounded-lg bg-zinc-800 text-zinc-300 hover:bg-red-500 hover:text-white transition-colors font-medium disabled:opacity-30 disabled:cursor-not-allowed"
                       >
-                        Eliminar
+                        <Trash2 size={16} />
                       </button>
                     </div>
                   </td>
