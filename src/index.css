@@ -2,12 +2,21 @@
 @tailwind components;
 @tailwind utilities;
 
-:root {
-  /* Forzamos el valor. Si env() falla, usaremos 44px que es el estándar del notch */
-  --sat: env(safe-area-inset-top, 44px);
+/* Ajuste inteligente de área segura */
+nav {
+  /* Usamos max() para comparar:
+     1. El padding original del diseño (1rem = 16px).
+     2. El área segura del dispositivo.
+     En PC, env() es 0, así que usará 16px.
+     En iPhone, env() es ~44px, así que usará 44px.
+  */
+  padding-top: max(1rem, env(safe-area-inset-top)) !important;
 }
 
-/* Si prefieres aplicarlo solo al Nav y no a todo el body: */
-nav {
-  padding-top: var(--sat) !important;
+/* Opcional: Si notas que el menú móvil también se desplaza raro */
+@media (display-mode: standalone) {
+  /* Este código solo se ejecuta cuando la app está abierta como PWA */
+  nav {
+    padding-top: env(safe-area-inset-top, 20px) !important;
+  }
 }
