@@ -1,0 +1,22 @@
+{
+  "short_name": "Zave",
+  "name": "Zave - Gestión de compra Eficiente",
+  "icons": [
+    {
+      "src": "carros.png",
+      "sizes": "1024x1024",
+      "type": "image/png",
+      "purpose": "any"
+    },
+    {
+      "src": "carros.png",
+      "sizes": "512x512 192x192 180x180 167x167",
+      "type": "image/png",
+      "purpose": "maskable"
+    }
+  ],
+  "start_url": ".",
+  "display": "standalone",
+  "theme_color": "#121212",
+  "background_color": "#121212"
+}
