@@ -10,11 +10,9 @@ export default function Dashboard() {
   const [prices, setPrices] = useState([]);
   const [loading, setLoading] = useState(true);
 
-  // Filtros
   const [search, setSearch] = useState('');
   const [selectedCategory, setSelectedCategory] = useState('');
 
-  // Modal estados
   const [showModal, setShowModal] = useState(false);
   const [editingProduct, setEditingProduct] = useState(null);
   const [productName, setProductName] = useState('');
@@ -45,17 +43,14 @@ export default function Dashboard() {
 
   useEffect(() => { fetchData(); }, []);
 
-  // Productos filtrados por búsqueda y categoría
   const filteredProducts = products.filter((p) => {
     const matchesSearch =
       search.trim() === '' ||
       p.name.toLowerCase().includes(search.toLowerCase()) ||
       (p.description && p.description.toLowerCase().includes(search.toLowerCase()));
-
     const matchesCategory =
       selectedCategory === '' ||
       String(p.category_id) === selectedCategory;
-
     return matchesSearch && matchesCategory;
   });
 
@@ -163,30 +158,26 @@ export default function Dashboard() {
   return (
     <div className="min-h-screen bg-black px-4 md:px-6 py-6 md:py-8">
 
-      {/* Cabecera: título | filtro categoría | botón añadir */}
+      {/* Cabecera */}
       <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-4 mb-4 md:mb-6">
-
-        {/* Título */}
         <div className="shrink-0">
           <h2 className="text-white text-xl md:text-2xl font-bold">Productos</h2>
           <p className="text-zinc-500 text-sm mt-1">Comparativa de precios por supermercado</p>
         </div>
 
-        {/* Filtro categoría — centrado */}
         <div className="flex-1 flex justify-center px-0 sm:px-4">
           <select
             value={selectedCategory}
             onChange={(e) => setSelectedCategory(e.target.value)}
             className="w-full sm:w-56 bg-zinc-900 text-zinc-300 rounded-lg px-4 py-2.5 text-sm outline-none border border-zinc-700 focus:border-yellow-400 transition-colors"
           >
-            <option value="">Todas</option>
+            <option value="">Todas las categorías</option>
             {categories.map((c) => (
               <option key={c.id} value={String(c.id)}>{c.name}</option>
             ))}
           </select>
         </div>
 
-        {/* Botón añadir */}
         {canEdit && (
           <button
             onClick={openCreate}
@@ -195,7 +186,6 @@ export default function Dashboard() {
             + Añadir producto
           </button>
         )}
-
       </div>
 
       {/* Barra de búsqueda */}
@@ -232,16 +222,18 @@ export default function Dashboard() {
         </div>
       ) : (
         <div className="overflow-x-auto rounded-xl border border-zinc-800">
-          <table className="w-full text-sm min-w-[400px]">
+          <table className="w-full text-sm min-w-[300px]">
             <thead>
               <tr className="border-b border-zinc-800">
+                {/* En móvil la columna producto incluye categoría y peso */}
                 <th className="text-left text-zinc-400 font-medium px-3 md:px-4 py-3 bg-zinc-900">
                   Producto
                 </th>
-                <th className="text-left text-zinc-400 font-medium px-3 md:px-4 py-3 bg-zinc-900 hidden sm:table-cell">
+                {/* Categoría y peso solo visibles en desktop como columnas separadas */}
+                <th className="text-left text-zinc-400 font-medium px-3 md:px-4 py-3 bg-zinc-900 hidden md:table-cell">
                   Categoría
                 </th>
-                <th className="text-left text-zinc-400 font-medium px-3 md:px-4 py-3 bg-zinc-900 hidden md:table-cell">
+                <th className="text-left text-zinc-400 font-medium px-3 md:px-4 py-3 bg-zinc-900 hidden lg:table-cell">
                   Peso
                 </th>
                 {supermarkets.map((s) => (
@@ -271,8 +263,22 @@ export default function Dashboard() {
                       {product.description && (
                         <p className="text-zinc-500 text-xs mt-0.5">{product.description}</p>
                       )}
+                      {/* Categoría y peso visibles solo en móvil dentro de la celda producto */}
+                      <div className="flex flex-wrap items-center gap-2 mt-1.5 md:hidden">
+                        {product.categories && (
+                          <span className="text-xs font-medium px-2 py-0.5 rounded-md bg-yellow-400/10 text-yellow-400 border border-yellow-400/20">
+                            {product.categories.name}
+                          </span>
+                        )}
+                        {product.weight_grams && (
+                          <span className="text-zinc-400 font-mono text-xs">
+                            {formatWeight(product.weight_grams)}
+                          </span>
+                        )}
+                      </div>
                     </td>
-                    <td className="px-3 md:px-4 py-3 hidden sm:table-cell">
+                    {/* Categoría como columna solo en desktop */}
+                    <td className="px-3 md:px-4 py-3 hidden md:table-cell">
                       {product.categories ? (
                         <span className="text-xs font-medium px-2 py-1 rounded-md bg-yellow-400/10 text-yellow-400 border border-yellow-400/20">
                           {product.categories.name}
@@ -281,7 +287,8 @@ export default function Dashboard() {
                         <span className="text-zinc-700">—</span>
                       )}
                     </td>
-                    <td className="px-3 md:px-4 py-3 hidden md:table-cell">
+                    {/* Peso como columna solo en desktop grande */}
+                    <td className="px-3 md:px-4 py-3 hidden lg:table-cell">
                       {product.weight_grams ? (
                         <span className="text-zinc-300 font-mono text-xs">
                           {formatWeight(product.weight_grams)}
@@ -333,134 +340,137 @@ export default function Dashboard() {
         </div>
       )}
 
-      {/* Modal */}
+      {/* Modal — en móvil sube desde abajo, en desktop centrado */}
       {showModal && (
-        <div className="fixed inset-0 bg-black/80 flex items-end sm:items-center justify-center z-50 px-0 sm:px-4">
-          <div className="bg-zinc-900 border border-zinc-800 rounded-t-2xl sm:rounded-2xl p-6 md:p-8 w-full sm:max-w-lg max-h-[90vh] overflow-y-auto">
+        <div className="fixed inset-0 bg-black/80 flex items-end sm:items-center justify-center z-50">
+          <div className="bg-zinc-900 border border-zinc-800 rounded-t-2xl sm:rounded-2xl w-full sm:max-w-lg max-h-[92vh] overflow-y-auto">
+            <div className="p-6 md:p-8">
 
-            <h3 className="text-white text-lg font-bold mb-6">
-              {editingProduct ? 'Editar producto' : 'Nuevo producto'}
-            </h3>
+              <h3 className="text-white text-lg font-bold mb-6">
+                {editingProduct ? 'Editar producto' : 'Nuevo producto'}
+              </h3>
 
-            <div className="flex flex-col gap-4">
+              <div className="flex flex-col gap-4">
 
-              <div className="flex flex-col gap-1">
-                <label className="text-zinc-400 text-xs uppercase tracking-widest">
-                  Nombre del producto
-                </label>
-                <input
-                  type="text"
-                  value={productName}
-                  onChange={(e) => setProductName(e.target.value)}
-                  placeholder="Ej: Leche entera"
-                  className="bg-zinc-800 text-white rounded-lg px-4 py-3 text-sm outline-none border border-zinc-700 focus:border-yellow-400 transition-colors placeholder-zinc-600"
-                />
-              </div>
-
-              <div className="flex flex-col gap-1">
-                <label className="text-zinc-400 text-xs uppercase tracking-widest">
-                  Descripción <span className="text-zinc-600 normal-case">(opcional)</span>
-                </label>
-                <input
-                  type="text"
-                  value={productDescription}
-                  onChange={(e) => setProductDescription(e.target.value)}
-                  placeholder="Ej: Marca blanca"
-                  className="bg-zinc-800 text-white rounded-lg px-4 py-3 text-sm outline-none border border-zinc-700 focus:border-yellow-400 transition-colors placeholder-zinc-600"
-                />
-              </div>
-
-              <div className="flex gap-3">
-
-                <div className="flex flex-col gap-1 flex-1">
+                <div className="flex flex-col gap-1">
                   <label className="text-zinc-400 text-xs uppercase tracking-widest">
-                    Peso <span className="text-zinc-600 normal-case">(opcional)</span>
+                    Nombre del producto
                   </label>
-                  <div className="flex gap-2">
-                    <input
-                      type="number"
-                      min="0"
-                      value={productWeight}
-                      onChange={(e) => setProductWeight(e.target.value)}
-                      placeholder="Ej: 500"
-                      className="bg-zinc-800 text-white rounded-lg px-3 py-3 text-sm outline-none border border-zinc-700 focus:border-yellow-400 transition-colors placeholder-zinc-600 flex-1 min-w-0"
-                    />
-                    <select
-                      value={productWeightUnit}
-                      onChange={(e) => setProductWeightUnit(e.target.value)}
-                      className="bg-zinc-800 text-white rounded-lg px-3 py-3 text-sm outline-none border border-zinc-700 focus:border-yellow-400 transition-colors"
-                    >
-                      <option value="g">g</option>
-                      <option value="kg">kg</option>
-                    </select>
-                  </div>
+                  <input
+                    type="text"
+                    value={productName}
+                    onChange={(e) => setProductName(e.target.value)}
+                    placeholder="Ej: Leche entera"
+                    className="bg-zinc-800 text-white rounded-lg px-4 py-3 text-sm outline-none border border-zinc-700 focus:border-yellow-400 transition-colors placeholder-zinc-600"
+                  />
                 </div>
 
-                <div className="flex flex-col gap-1 flex-1">
+                <div className="flex flex-col gap-1">
                   <label className="text-zinc-400 text-xs uppercase tracking-widest">
-                    Categoría <span className="text-zinc-600 normal-case">(opcional)</span>
+                    Descripción <span className="text-zinc-600 normal-case">(opcional)</span>
                   </label>
-                  <select
-                    value={productCategory}
-                    onChange={(e) => setProductCategory(e.target.value)}
-                    className="bg-zinc-800 text-white rounded-lg px-4 py-3 text-sm outline-none border border-zinc-700 focus:border-yellow-400 transition-colors"
-                  >
-                    <option value="">Sin categoría</option>
-                    {categories.map((c) => (
-                      <option key={c.id} value={c.id}>{c.name}</option>
-                    ))}
-                  </select>
+                  <input
+                    type="text"
+                    value={productDescription}
+                    onChange={(e) => setProductDescription(e.target.value)}
+                    placeholder="Ej: Marca blanca"
+                    className="bg-zinc-800 text-white rounded-lg px-4 py-3 text-sm outline-none border border-zinc-700 focus:border-yellow-400 transition-colors placeholder-zinc-600"
+                  />
                 </div>
 
-              </div>
+                {/* Peso y categoría: en móvil apilados, en desktop en fila */}
+                <div className="flex flex-col sm:flex-row gap-3">
 
-              {supermarkets.length > 0 && (
-                <div className="flex flex-col gap-2">
-                  <label className="text-zinc-400 text-xs uppercase tracking-widest">
-                    Precios por supermercado
-                  </label>
-                  {supermarkets.map((s) => (
-                    <div key={s.id} className="flex items-center gap-3">
-                      <span className="text-zinc-300 text-sm flex-1 truncate">{s.name}</span>
+                  <div className="flex flex-col gap-1 flex-1">
+                    <label className="text-zinc-400 text-xs uppercase tracking-widest">
+                      Peso <span className="text-zinc-600 normal-case">(opcional)</span>
+                    </label>
+                    <div className="flex gap-2">
                       <input
                         type="number"
-                        step="0.01"
                         min="0"
-                        value={productPrices[s.id] ?? ''}
-                        onChange={(e) =>
-                          setProductPrices((prev) => ({ ...prev, [s.id]: e.target.value }))
-                        }
-                        placeholder="0.00"
-                        className="bg-zinc-800 text-white rounded-lg px-3 py-2 text-sm outline-none border border-zinc-700 focus:border-yellow-400 transition-colors placeholder-zinc-600 w-28"
+                        value={productWeight}
+                        onChange={(e) => setProductWeight(e.target.value)}
+                        placeholder="Ej: 500"
+                        className="bg-zinc-800 text-white rounded-lg px-3 py-3 text-sm outline-none border border-zinc-700 focus:border-yellow-400 transition-colors placeholder-zinc-600 flex-1 min-w-0"
                       />
-                      <span className="text-zinc-500 text-sm">€</span>
+                      <select
+                        value={productWeightUnit}
+                        onChange={(e) => setProductWeightUnit(e.target.value)}
+                        className="bg-zinc-800 text-white rounded-lg px-3 py-3 text-sm outline-none border border-zinc-700 focus:border-yellow-400 transition-colors"
+                      >
+                        <option value="g">g</option>
+                        <option value="kg">kg</option>
+                      </select>
                     </div>
-                  ))}
+                  </div>
+
+                  <div className="flex flex-col gap-1 flex-1">
+                    <label className="text-zinc-400 text-xs uppercase tracking-widest">
+                      Categoría <span className="text-zinc-600 normal-case">(opcional)</span>
+                    </label>
+                    <select
+                      value={productCategory}
+                      onChange={(e) => setProductCategory(e.target.value)}
+                      className="bg-zinc-800 text-white rounded-lg px-4 py-3 text-sm outline-none border border-zinc-700 focus:border-yellow-400 transition-colors"
+                    >
+                      <option value="">Sin categoría</option>
+                      {categories.map((c) => (
+                        <option key={c.id} value={c.id}>{c.name}</option>
+                      ))}
+                    </select>
+                  </div>
+
                 </div>
-              )}
 
-              {error && (
-                <p className="text-orange-400 text-xs bg-orange-400/10 border border-orange-400/20 rounded-lg px-3 py-2">
-                  {error}
-                </p>
-              )}
+                {supermarkets.length > 0 && (
+                  <div className="flex flex-col gap-2">
+                    <label className="text-zinc-400 text-xs uppercase tracking-widest">
+                      Precios por supermercado
+                    </label>
+                    {supermarkets.map((s) => (
+                      <div key={s.id} className="flex items-center gap-3">
+                        <span className="text-zinc-300 text-sm flex-1 truncate">{s.name}</span>
+                        <input
+                          type="number"
+                          step="0.01"
+                          min="0"
+                          value={productPrices[s.id] ?? ''}
+                          onChange={(e) =>
+                            setProductPrices((prev) => ({ ...prev, [s.id]: e.target.value }))
+                          }
+                          placeholder="0.00"
+                          className="bg-zinc-800 text-white rounded-lg px-3 py-2 text-sm outline-none border border-zinc-700 focus:border-yellow-400 transition-colors placeholder-zinc-600 w-28"
+                        />
+                        <span className="text-zinc-500 text-sm">€</span>
+                      </div>
+                    ))}
+                  </div>
+                )}
 
-              <div className="flex gap-3 mt-2">
-                <button
-                  onClick={() => setShowModal(false)}
-                  className="flex-1 py-3 rounded-lg border border-zinc-700 text-zinc-400 hover:text-white hover:border-zinc-500 text-sm font-medium transition-colors"
-                >
-                  Cancelar
-                </button>
-                <button
-                  onClick={handleSave}
-                  disabled={saving}
-                  className="flex-1 py-3 rounded-lg bg-yellow-400 hover:bg-yellow-300 text-black font-bold text-sm transition-colors disabled:opacity-50"
-                >
-                  {saving ? 'Guardando...' : 'Guardar'}
-                </button>
+                {error && (
+                  <p className="text-orange-400 text-xs bg-orange-400/10 border border-orange-400/20 rounded-lg px-3 py-2">
+                    {error}
+                  </p>
+                )}
+
+                <div className="flex gap-3 mt-2">
+                  <button
+                    onClick={() => setShowModal(false)}
+                    className="flex-1 py-3 rounded-lg border border-zinc-700 text-zinc-400 hover:text-white hover:border-zinc-500 text-sm font-medium transition-colors"
+                  >
+                    Cancelar
+                  </button>
+                  <button
+                    onClick={handleSave}
+                    disabled={saving}
+                    className="flex-1 py-3 rounded-lg bg-yellow-400 hover:bg-yellow-300 text-black font-bold text-sm transition-colors disabled:opacity-50"
+                  >
+                    {saving ? 'Guardando...' : 'Guardar'}
+                  </button>
+                </div>
+
               </div>
-
             </div>
           </div>
         </div>
