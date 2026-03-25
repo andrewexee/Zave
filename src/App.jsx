@@ -4,6 +4,7 @@ import Login from './pages/Login';
 import Register from './pages/Register';
 import Dashboard from './pages/Dashboard';
 import Supermarkets from './pages/Supermarkets';
+import Categories from './pages/Categories';
 import Admin from './pages/Admin';
 import Navbar from './components/Navbar';
 
@@ -43,6 +44,12 @@ function AppRoutes() {
       <Route path="/supermarkets" element={
         <ProtectedRoute allowedRoles={['editor', 'admin']}>
           <Navbar /><Supermarkets />
+        </ProtectedRoute>
+      } />
+
+      <Route path="/categories" element={
+        <ProtectedRoute allowedRoles={['editor', 'admin']}>
+          <Navbar /><Categories />
         </ProtectedRoute>
       } />
 

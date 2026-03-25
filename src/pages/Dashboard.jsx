@@ -6,6 +6,7 @@ export default function Dashboard() {
   const { profile } = useAuth();
   const [products, setProducts] = useState([]);
   const [supermarkets, setSupermarkets] = useState([]);
+  const [categories, setCategories] = useState([]);
   const [prices, setPrices] = useState([]);
   const [loading, setLoading] = useState(true);
 
@@ -13,6 +14,9 @@ export default function Dashboard() {
   const [editingProduct, setEditingProduct] = useState(null);
   const [productName, setProductName] = useState('');
   const [productDescription, setProductDescription] = useState('');
+  const [productWeight, setProductWeight] = useState('');
+  const [productWeightUnit, setProductWeightUnit] = useState('g');
+  const [productCategory, setProductCategory] = useState('');
   const [productPrices, setProductPrices] = useState({});
   const [saving, setSaving] = useState(false);
   const [error, setError] = useState('');
@@ -21,25 +25,20 @@ export default function Dashboard() {
 
   const fetchData = async () => {
     setLoading(true);
-    const [{ data: prods }, { data: supers }, { data: prics }] = await Promise.all([
-      supabase.from('products').select('*').order('name'),
+    const [{ data: prods }, { data: supers }, { data: cats }, { data: prics }] = await Promise.all([
+      supabase.from('products').select('*, categories(name)').order('name'),
       supabase.from('supermarkets').select('*').order('name'),
+      supabase.from('categories').select('*').order('name'),
       supabase.from('product_prices').select('*'),
     ]);
     setProducts(prods ?? []);
     setSupermarkets(supers ?? []);
+    setCategories(cats ?? []);
     setPrices(prics ?? []);
     setLoading(false);
   };
 
   useEffect(() => { fetchData(); }, []);
-
-  const getPrice = (productId, supermarketId) => {
-    const found = prices.find(
-      (p) => p.product_id === productId && p.supermarket_id === supermarketId
-    );
-    return found ? `${parseFloat(found.price).toFixed(2)} €` : '—';
-  };
 
   const getCheapest = (productId) => {
     const list = prices.filter((p) => p.product_id === productId);
@@ -47,10 +46,19 @@ export default function Dashboard() {
     return list.reduce((min, p) => (p.price < min.price ? p : min));
   };
 
+  const formatWeight = (grams) => {
+    if (!grams) return null;
+    if (grams >= 1000) return `${(grams / 1000).toFixed(grams % 1000 === 0 ? 0 : 1)} kg`;
+    return `${grams} g`;
+  };
+
   const openCreate = () => {
     setEditingProduct(null);
     setProductName('');
     setProductDescription('');
+    setProductWeight('');
+    setProductWeightUnit('g');
+    setProductCategory('');
     setProductPrices({});
     setError('');
     setShowModal(true);
@@ -60,6 +68,10 @@ export default function Dashboard() {
     setEditingProduct(product);
     setProductName(product.name);
     setProductDescription(product.description ?? '');
+    // Mostrar el peso almacenado en gramos, el usuario puede cambiar la unidad si quiere
+    setProductWeight(product.weight_grams ?? '');
+    setProductWeightUnit('g');
+    setProductCategory(product.category_id ?? '');
     const existing = {};
     prices
       .filter((p) => p.product_id === product.id)
@@ -74,22 +86,34 @@ export default function Dashboard() {
       setError('El nombre del producto es obligatorio.');
       return;
     }
+
+    // Conversión de peso a gramos antes de guardar
+    let weightInGrams = null;
+    if (productWeight !== '' && productWeight !== null) {
+      const rawWeight = parseFloat(productWeight);
+      if (!isNaN(rawWeight) && rawWeight > 0) {
+        weightInGrams = productWeightUnit === 'kg'
+          ? Math.round(rawWeight * 1000)
+          : Math.round(rawWeight);
+      }
+    }
+
     setSaving(true);
     setError('');
+
+    const payload = {
+      name: productName.trim(),
+      description: productDescription.trim() || null,
+      weight_grams: weightInGrams,
+      category_id: productCategory !== '' ? parseInt(productCategory) : null,
+    };
 
     let productId = editingProduct?.id;
 
     if (editingProduct) {
-      await supabase
-        .from('products')
-        .update({ name: productName.trim(), description: productDescription.trim() })
-        .eq('id', productId);
+      await supabase.from('products').update(payload).eq('id', productId);
     } else {
-      const { data } = await supabase
-        .from('products')
-        .insert({ name: productName.trim(), description: productDescription.trim() })
-        .select()
-        .single();
+      const { data } = await supabase.from('products').insert(payload).select().single();
       productId = data.id;
     }
 
@@ -122,7 +146,6 @@ export default function Dashboard() {
   return (
     <div className="min-h-screen bg-black px-4 md:px-6 py-6 md:py-8">
 
-      {/* Cabecera */}
       <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-4 mb-6 md:mb-8">
         <div>
           <h2 className="text-white text-xl md:text-2xl font-bold">Productos</h2>
@@ -138,7 +161,6 @@ export default function Dashboard() {
         )}
       </div>
 
-      {/* Tabla */}
       {loading ? (
         <div className="flex items-center justify-center py-20">
           <span className="text-yellow-400 font-mono animate-pulse">Cargando...</span>
@@ -160,6 +182,12 @@ export default function Dashboard() {
               <tr className="border-b border-zinc-800">
                 <th className="text-left text-zinc-400 font-medium px-3 md:px-4 py-3 bg-zinc-900">
                   Producto
+                </th>
+                <th className="text-left text-zinc-400 font-medium px-3 md:px-4 py-3 bg-zinc-900 hidden sm:table-cell">
+                  Categoría
+                </th>
+                <th className="text-left text-zinc-400 font-medium px-3 md:px-4 py-3 bg-zinc-900 hidden md:table-cell">
+                  Peso
                 </th>
                 {supermarkets.map((s) => (
                   <th key={s.id} className="text-center text-zinc-400 font-medium px-3 md:px-4 py-3 bg-zinc-900 whitespace-nowrap">
@@ -187,6 +215,24 @@ export default function Dashboard() {
                       <span className="text-white font-medium">{product.name}</span>
                       {product.description && (
                         <p className="text-zinc-500 text-xs mt-0.5">{product.description}</p>
+                      )}
+                    </td>
+                    <td className="px-3 md:px-4 py-3 hidden sm:table-cell">
+                      {product.categories ? (
+                        <span className="text-xs font-medium px-2 py-1 rounded-md bg-yellow-400/10 text-yellow-400 border border-yellow-400/20">
+                          {product.categories.name}
+                        </span>
+                      ) : (
+                        <span className="text-zinc-700">—</span>
+                      )}
+                    </td>
+                    <td className="px-3 md:px-4 py-3 hidden md:table-cell">
+                      {product.weight_grams ? (
+                        <span className="text-zinc-300 font-mono text-xs">
+                          {formatWeight(product.weight_grams)}
+                        </span>
+                      ) : (
+                        <span className="text-zinc-700">—</span>
                       )}
                     </td>
                     {supermarkets.map((s) => {
@@ -244,12 +290,14 @@ export default function Dashboard() {
             <div className="flex flex-col gap-4">
 
               <div className="flex flex-col gap-1">
-                <label className="text-zinc-400 text-xs uppercase tracking-widest">Nombre del producto</label>
+                <label className="text-zinc-400 text-xs uppercase tracking-widest">
+                  Nombre del producto
+                </label>
                 <input
                   type="text"
                   value={productName}
                   onChange={(e) => setProductName(e.target.value)}
-                  placeholder="Ej: Leche entera 1L"
+                  placeholder="Ej: Leche entera"
                   className="bg-zinc-800 text-white rounded-lg px-4 py-3 text-sm outline-none border border-zinc-700 focus:border-yellow-400 transition-colors placeholder-zinc-600"
                 />
               </div>
@@ -265,6 +313,52 @@ export default function Dashboard() {
                   placeholder="Ej: Marca blanca"
                   className="bg-zinc-800 text-white rounded-lg px-4 py-3 text-sm outline-none border border-zinc-700 focus:border-yellow-400 transition-colors placeholder-zinc-600"
                 />
+              </div>
+
+              <div className="flex gap-3">
+
+                {/* Peso + unidad */}
+                <div className="flex flex-col gap-1 flex-1">
+                  <label className="text-zinc-400 text-xs uppercase tracking-widest">
+                    Peso <span className="text-zinc-600 normal-case">(opcional)</span>
+                  </label>
+                  <div className="flex gap-2">
+                    <input
+                      type="number"
+                      min="0"
+                      value={productWeight}
+                      onChange={(e) => setProductWeight(e.target.value)}
+                      placeholder="Ej: 500"
+                      className="bg-zinc-800 text-white rounded-lg px-3 py-3 text-sm outline-none border border-zinc-700 focus:border-yellow-400 transition-colors placeholder-zinc-600 flex-1 min-w-0"
+                    />
+                    <select
+                      value={productWeightUnit}
+                      onChange={(e) => setProductWeightUnit(e.target.value)}
+                      className="bg-zinc-800 text-white rounded-lg px-3 py-3 text-sm outline-none border border-zinc-700 focus:border-yellow-400 transition-colors"
+                    >
+                      <option value="g">g</option>
+                      <option value="kg">kg</option>
+                    </select>
+                  </div>
+                </div>
+
+                {/* Categoría */}
+                <div className="flex flex-col gap-1 flex-1">
+                  <label className="text-zinc-400 text-xs uppercase tracking-widest">
+                    Categoría <span className="text-zinc-600 normal-case">(opcional)</span>
+                  </label>
+                  <select
+                    value={productCategory}
+                    onChange={(e) => setProductCategory(e.target.value)}
+                    className="bg-zinc-800 text-white rounded-lg px-4 py-3 text-sm outline-none border border-zinc-700 focus:border-yellow-400 transition-colors"
+                  >
+                    <option value="">Sin categoría</option>
+                    {categories.map((c) => (
+                      <option key={c.id} value={c.id}>{c.name}</option>
+                    ))}
+                  </select>
+                </div>
+
               </div>
 
               {supermarkets.length > 0 && (

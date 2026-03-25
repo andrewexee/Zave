@@ -13,7 +13,6 @@ export default function Navbar() {
     <nav className="bg-zinc-900 border-b border-zinc-800 px-4 md:px-6 py-4">
       <div className="flex items-center justify-between">
 
-        {/* Logo */}
         <span className="text-2xl font-black tracking-tighter text-white">
           Z<span className="text-yellow-400">a</span>ve
         </span>
@@ -32,16 +31,29 @@ export default function Navbar() {
           </Link>
 
           {(profile?.role === 'editor' || profile?.role === 'admin') && (
-            <Link
-              to="/supermarkets"
-              className={`px-4 py-2 rounded-lg text-sm font-medium transition-colors ${
-                isActive('/supermarkets')
-                  ? 'bg-green-400 text-black'
-                  : 'text-zinc-400 hover:text-white hover:bg-zinc-800'
-              }`}
-            >
-              Supermercados
-            </Link>
+            <>
+              <Link
+                to="/categories"
+                className={`px-4 py-2 rounded-lg text-sm font-medium transition-colors ${
+                  isActive('/categories')
+                    ? 'bg-yellow-400 text-black'
+                    : 'text-zinc-400 hover:text-white hover:bg-zinc-800'
+                }`}
+              >
+                Categorías
+              </Link>
+
+              <Link
+                to="/supermarkets"
+                className={`px-4 py-2 rounded-lg text-sm font-medium transition-colors ${
+                  isActive('/supermarkets')
+                    ? 'bg-green-400 text-black'
+                    : 'text-zinc-400 hover:text-white hover:bg-zinc-800'
+                }`}
+              >
+                Supermercados
+              </Link>
+            </>
           )}
 
           {profile?.role === 'admin' && (
@@ -89,7 +101,7 @@ export default function Navbar() {
           </button>
         </div>
 
-        {/* Mobile: botón hamburguesa */}
+        {/* Mobile hamburguesa */}
         <button
           onClick={() => setMenuOpen(!menuOpen)}
           className="md:hidden flex flex-col gap-1.5 p-2 rounded-lg hover:bg-zinc-800 transition-colors"
@@ -101,11 +113,10 @@ export default function Navbar() {
 
       </div>
 
-      {/* Mobile menu desplegable */}
+      {/* Mobile menu */}
       {menuOpen && (
         <div className="md:hidden mt-4 flex flex-col gap-2 border-t border-zinc-800 pt-4">
 
-          {/* Info usuario */}
           <div className="flex items-center gap-3 px-2 pb-3 border-b border-zinc-800">
             <div className="w-9 h-9 rounded-full bg-zinc-700 flex items-center justify-center">
               <span className="text-white text-sm font-bold uppercase">
@@ -126,7 +137,6 @@ export default function Navbar() {
             </div>
           </div>
 
-          {/* Links */}
           <Link
             to="/dashboard"
             onClick={() => setMenuOpen(false)}
@@ -140,17 +150,31 @@ export default function Navbar() {
           </Link>
 
           {(profile?.role === 'editor' || profile?.role === 'admin') && (
-            <Link
-              to="/supermarkets"
-              onClick={() => setMenuOpen(false)}
-              className={`px-4 py-3 rounded-lg text-sm font-medium transition-colors ${
-                isActive('/supermarkets')
-                  ? 'bg-green-400 text-black'
-                  : 'text-zinc-400 hover:text-white hover:bg-zinc-800'
-              }`}
-            >
-              Supermercados
-            </Link>
+            <>
+              <Link
+                to="/categories"
+                onClick={() => setMenuOpen(false)}
+                className={`px-4 py-3 rounded-lg text-sm font-medium transition-colors ${
+                  isActive('/categories')
+                    ? 'bg-yellow-400 text-black'
+                    : 'text-zinc-400 hover:text-white hover:bg-zinc-800'
+                }`}
+              >
+                Categorías
+              </Link>
+
+              <Link
+                to="/supermarkets"
+                onClick={() => setMenuOpen(false)}
+                className={`px-4 py-3 rounded-lg text-sm font-medium transition-colors ${
+                  isActive('/supermarkets')
+                    ? 'bg-green-400 text-black'
+                    : 'text-zinc-400 hover:text-white hover:bg-zinc-800'
+                }`}
+              >
+                Supermercados
+              </Link>
+            </>
           )}
 
           {profile?.role === 'admin' && (
