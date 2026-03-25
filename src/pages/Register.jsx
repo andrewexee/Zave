@@ -51,7 +51,7 @@ export default function Register() {
             Z<span className="text-green-400">a</span>ve
           </h1>
           <p className="text-zinc-500 text-xs md:text-sm mt-2 tracking-widest uppercase">
-            The best app for save money
+            The best app to save your money
           </p>
         </div>
 

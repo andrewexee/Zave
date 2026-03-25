@@ -34,7 +34,7 @@ export default function Login() {
             Z<span className="text-yellow-400">a</span>ve
           </h1>
           <p className="text-zinc-500 text-xs md:text-sm mt-2 tracking-widest uppercase">
-            The best app for save money
+            Ahorrar en inglés es Save... ¿O no lo Zave?
           </p>
         </div>
 
