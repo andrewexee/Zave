@@ -1,4 +1,4 @@
-import { useState } from 'react';
+import { useState, useEffect } from 'react';
 import { useAuth } from '../context/AuthContext';
 import { useCartStore } from '../store/cartStore';
 import supabase from '../supabaseClient';
@@ -18,6 +18,15 @@ export default function Cart() {
   const [adding, setAdding] = useState(false);
 
   const { addItem } = useCartStore();
+
+  // Cargar supermercados para los selects
+  useEffect(() => {
+    const loadSupermarketsLookup = async () => {
+      const { data } = await supabase.from('supermarkets').select('*').order('name');
+      setSupermarkets(data ?? []);
+    };
+    loadSupermarketsLookup();
+  }, []);
 
   // Agrupar items por supermercado y dentro por categoría
   const grouped = items.reduce((acc, item) => {
@@ -320,9 +329,11 @@ export default function Cart() {
                   >
                     <option value="">Selecciona un supermercado</option>
                     {editingPrices.map((p) => {
-                      const superName = items.find(
-                        (i) => i.supermarket_id === p.supermarket_id
-                      )?.supermarkets?.name ?? `Supermercado ${p.supermarket_id}`;
+                      // Buscamos el nombre en el estado 'supermarkets' en lugar de en 'items'
+                      const superName = supermarkets.find(
+                        (s) => s.id === p.supermarket_id
+                      )?.name ?? `Supermercado ${p.supermarket_id}`;
+
                       return (
                         <option key={p.supermarket_id} value={p.supermarket_id}>
                           {superName} — {parseFloat(p.price).toFixed(2)} €
