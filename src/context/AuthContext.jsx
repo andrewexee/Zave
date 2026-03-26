@@ -1,5 +1,6 @@
 import { createContext, useContext, useEffect, useState } from 'react';
 import supabase from '../supabaseClient';
+import { useCartStore } from '../store/cartStore';
 
 const AuthContext = createContext();
 
@@ -7,6 +8,7 @@ export function AuthProvider({ children }) {
   const [user, setUser] = useState(null);
   const [profile, setProfile] = useState(null);
   const [loading, setLoading] = useState(true);
+  const fetchCart = useCartStore((state) => state.fetchCart);
 
   const fetchProfile = async (userId) => {
     const { data } = await supabase
@@ -20,14 +22,21 @@ export function AuthProvider({ children }) {
   useEffect(() => {
     supabase.auth.getSession().then(({ data: { session } }) => {
       setUser(session?.user ?? null);
-      if (session?.user) fetchProfile(session.user.id);
+      if (session?.user) {
+        fetchProfile(session.user.id);
+        fetchCart(session.user.id);
+      }
       setLoading(false);
     });
 
     const { data: listener } = supabase.auth.onAuthStateChange((_event, session) => {
       setUser(session?.user ?? null);
-      if (session?.user) fetchProfile(session.user.id);
-      else setProfile(null);
+      if (session?.user) {
+        fetchProfile(session.user.id);
+        fetchCart(session.user.id);
+      } else {
+        setProfile(null);
+      }
     });
 
     return () => listener.subscription.unsubscribe();

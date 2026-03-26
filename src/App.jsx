@@ -6,6 +6,7 @@ import Dashboard from './pages/Dashboard';
 import Supermarkets from './pages/Supermarkets';
 import Categories from './pages/Categories';
 import Admin from './pages/Admin';
+import Cart from './pages/Cart';
 import Navbar from './components/Navbar';
 
 function ProtectedRoute({ children, allowedRoles }) {
@@ -56,6 +57,12 @@ function AppRoutes() {
       <Route path="/admin" element={
         <ProtectedRoute allowedRoles={['admin']}>
           <Navbar /><Admin />
+        </ProtectedRoute>
+      } />
+
+      <Route path="/cart" element={
+        <ProtectedRoute allowedRoles={['user', 'editor', 'admin']}>
+          <Navbar /><Cart />
         </ProtectedRoute>
       } />
 
