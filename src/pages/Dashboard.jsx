@@ -64,10 +64,20 @@ export default function Dashboard() {
     return matchesSearch && matchesCategory;
   });
 
-  const getCheapest = (productId) => {
+  // NUEVA FUNCIONALIDAD: Devuelve los IDs de los supermercados con el precio mínimo y si hay empate
+  const getCheapestInfo = (productId) => {
     const list = prices.filter((p) => p.product_id === productId);
-    if (list.length === 0) return null;
-    return list.reduce((min, p) => (p.price < min.price ? p : min));
+    if (list.length === 0) return { ids: [], isTie: false };
+    
+    const minPrice = Math.min(...list.map(p => parseFloat(p.price)));
+    const cheapestIds = list
+      .filter(p => parseFloat(p.price) === minPrice)
+      .map(p => p.supermarket_id);
+      
+    return {
+      ids: cheapestIds,
+      isTie: cheapestIds.length > 1
+    };
   };
 
   const formatWeight = (grams) => {
@@ -290,7 +300,7 @@ export default function Dashboard() {
             </thead>
             <tbody>
               {filteredProducts.map((product, i) => {
-                const cheapest = getCheapest(product.id);
+                const cheapestInfo = getCheapestInfo(product.id);
                 const inCart = isInCart(product.id);
                 return (
                   <tr
@@ -351,14 +361,18 @@ export default function Dashboard() {
                     </td>
 
                     {supermarkets.map((s) => {
-                      const isCheapest = cheapest?.supermarket_id === s.id;
+                      const isCheapest = cheapestInfo.ids.includes(s.id);
+                      const priceColorClass = isCheapest 
+                        ? (cheapestInfo.isTie ? 'text-yellow-400' : 'text-green-400')
+                        : 'text-zinc-300';
+                        
                       const priceEntry = prices.find(
                         (p) => p.product_id === product.id && p.supermarket_id === s.id
                       );
                       return (
                         <td key={s.id} className="px-3 md:px-4 py-3 text-center">
                           {priceEntry ? (
-                            <span className={`font-mono font-semibold ${isCheapest ? 'text-green-400' : 'text-zinc-300'}`}>
+                            <span className={`font-mono font-semibold ${priceColorClass}`}>
                               {parseFloat(priceEntry.price).toFixed(2)} €
                             </span>
                           ) : (
@@ -431,31 +445,38 @@ export default function Dashboard() {
               </div>
 
               {/* Precios por supermercado */}
-              {supermarkets.length > 0 && (
-                <div className="flex flex-col gap-2 mb-6">
-                  <p className="text-zinc-400 text-xs uppercase tracking-widest mb-1">Precios</p>
-                  {supermarkets.map((s) => {
-                    const priceEntry = prices.find(
-                      (p) => p.product_id === selectedProduct.id && p.supermarket_id === s.id
-                    );
-                    const cheapest = getCheapest(selectedProduct.id);
-                    const isCheapest = cheapest?.supermarket_id === s.id;
-                    return (
-                      <div key={s.id} className="flex items-center justify-between px-3 py-2 rounded-lg bg-zinc-800 border border-zinc-700">
-                        <span className="text-zinc-300 text-sm">{s.name}</span>
-                        {priceEntry ? (
-                          <span className={`font-mono font-semibold text-sm ${isCheapest ? 'text-green-400' : 'text-zinc-300'}`}>
-                            {parseFloat(priceEntry.price).toFixed(2)} €
-                            {isCheapest && <span className="ml-1 text-xs opacity-70">✓</span>}
-                          </span>
-                        ) : (
-                          <span className="text-zinc-600 text-sm">—</span>
-                        )}
-                      </div>
-                    );
-                  })}
-                </div>
-              )}
+              {supermarkets.length > 0 && (() => {
+                const cheapestInfo = getCheapestInfo(selectedProduct.id);
+                
+                return (
+                  <div className="flex flex-col gap-2 mb-6">
+                    <p className="text-zinc-400 text-xs uppercase tracking-widest mb-1">Precios</p>
+                    {supermarkets.map((s) => {
+                      const priceEntry = prices.find(
+                        (p) => p.product_id === selectedProduct.id && p.supermarket_id === s.id
+                      );
+                      const isCheapest = cheapestInfo.ids.includes(s.id);
+                      const priceColorClass = isCheapest 
+                        ? (cheapestInfo.isTie ? 'text-yellow-400' : 'text-green-400')
+                        : 'text-zinc-300';
+
+                      return (
+                        <div key={s.id} className="flex items-center justify-between px-3 py-2 rounded-lg bg-zinc-800 border border-zinc-700">
+                          <span className="text-zinc-300 text-sm">{s.name}</span>
+                          {priceEntry ? (
+                            <span className={`font-mono font-semibold text-sm ${priceColorClass}`}>
+                              {parseFloat(priceEntry.price).toFixed(2)} €
+                              {isCheapest && <span className="ml-1 text-xs opacity-70">✓</span>}
+                            </span>
+                          ) : (
+                            <span className="text-zinc-600 text-sm">—</span>
+                          )}
+                        </div>
+                      );
+                    })}
+                  </div>
+                );
+              })()}
 
               {/* Botón añadir al carrito */}
               <button
