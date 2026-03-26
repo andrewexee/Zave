@@ -26,19 +26,49 @@ export const useCartStore = create((set, get) => ({
     set({ items: data ?? [], loading: false });
   },
 
-  // Añadir producto (asigna automáticamente el supermercado más barato)
+  // Añadir producto con lógica de desempate por prioridad
   addItem: async (userId, product) => {
-    // Buscar el supermercado con el precio más bajo
     const prices = product.product_prices ?? [];
     if (prices.length === 0) return;
-    const cheapest = prices.reduce((min, p) => p.price < min.price ? p : min);
+
+    // 1. Encontrar el precio mínimo absoluto
+    const minPrice = Math.min(...prices.map(p => parseFloat(p.price)));
+
+    // 2. Filtrar todos los supermercados que comparten ese precio mínimo
+    const cheapestOptions = prices.filter(p => parseFloat(p.price) === minPrice);
+
+    let selectedSupermarketId = cheapestOptions[0].supermarket_id;
+
+    // 3. Desempate: si hay más de un supermercado con el precio mínimo
+    if (cheapestOptions.length > 1) {
+      const currentCartItems = get().items;
+      const supermarketCounts = {};
+
+      // Contar cuántos productos hay de cada supermercado actualmente en la lista
+      currentCartItems.forEach(item => {
+        const sId = item.supermarket_id;
+        if (sId) {
+          supermarketCounts[sId] = (supermarketCounts[sId] || 0) + 1;
+        }
+      });
+
+      // Evaluar cuál de las opciones empatadas tiene más presencia en el carrito
+      let maxCount = -1;
+      cheapestOptions.forEach(option => {
+        const count = supermarketCounts[option.supermarket_id] || 0;
+        if (count > maxCount) {
+          maxCount = count;
+          selectedSupermarketId = option.supermarket_id;
+        }
+      });
+    }
 
     const { error } = await supabase
       .from('cart_items')
       .insert({
         user_id: userId,
         product_id: product.id,
-        supermarket_id: cheapest.supermarket_id,
+        supermarket_id: selectedSupermarketId,
       });
 
     if (!error) await get().fetchCart(userId);
