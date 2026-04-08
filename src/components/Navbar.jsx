@@ -2,7 +2,7 @@ import { useState } from 'react';
 import { Link, useLocation } from 'react-router-dom';
 import { useAuth } from '../context/AuthContext';
 import { useCartStore } from '../store/cartStore';
-import { ShoppingCart } from 'lucide-react';
+import { ShoppingCart, TicketCheck } from 'lucide-react'; // Importamos el nuevo icono
 
 export default function Navbar() {
   const { profile, signOut } = useAuth();
@@ -11,6 +11,13 @@ export default function Navbar() {
   const cartCount = useCartStore((state) => state.items.length);
 
   const isActive = (path) => location.pathname === path;
+
+  // Estilo base para los botones de acción (tickets y carrito)
+  const actionBtnClass = (path) => `relative p-2 rounded-lg transition-colors ${
+    isActive(path)
+      ? 'bg-yellow-400 text-black'
+      : 'text-zinc-400 hover:text-white hover:bg-zinc-800'
+  }`;
 
   return (
     <nav className="bg-zinc-900 border-b border-zinc-800 px-4 md:px-6 py-4 pt-[safe-area-inset-top]">
@@ -81,28 +88,37 @@ export default function Navbar() {
           )}
         </div>
 
-        {/* Lado derecho: carrito + usuario + logout — desktop */}
+        {/* Lado derecho: acciones + usuario + logout — desktop */}
         <div className="hidden md:flex md:flex-1 md:basis-0 items-center justify-end gap-3">
+          
+          {/* Contenedor de acciones (Tickets + Carrito) */}
+          <div className="flex items-center gap-1.5">
+            {/* NUEVO: Icono Tickets Desktop */}
+            <Link
+              to="/scanner"
+              title="Importar Ticket"
+              className={actionBtnClass('/scanner')}
+            >
+              <TicketCheck size={20} />
+            </Link>
 
-          {/* Icono carrito */}
-          <Link
-            to="/cart"
-            className={`relative p-2 rounded-lg transition-colors ${
-              isActive('/cart')
-                ? 'bg-yellow-400 text-black'
-                : 'text-zinc-400 hover:text-white hover:bg-zinc-800'
-            }`}
-          >
-            <ShoppingCart size={20} />
-            {cartCount > 0 && (
-              <span className="absolute -top-1 -right-1 w-4 h-4 bg-yellow-400 text-black text-xs font-bold rounded-full flex items-center justify-center leading-none">
-                {cartCount > 9 ? '9+' : cartCount}
-              </span>
-            )}
-          </Link>
+            {/* Icono carrito */}
+            <Link
+              to="/cart"
+              title="Lista de la compra"
+              className={actionBtnClass('/cart')}
+            >
+              <ShoppingCart size={20} />
+              {cartCount > 0 && (
+                <span className="absolute -top-1 -right-1 w-4 h-4 bg-yellow-400 text-black text-xs font-bold rounded-full flex items-center justify-center leading-none">
+                  {cartCount > 9 ? '9+' : cartCount}
+                </span>
+              )}
+            </Link>
+          </div>
 
           {/* Usuario */}
-          <div className="flex items-center gap-3">
+          <div className="flex items-center gap-3 ml-2 pl-3 border-l border-zinc-800">
             <div className="w-8 h-8 rounded-full bg-zinc-700 flex items-center justify-center">
               <span className="text-white text-xs font-bold uppercase">
                 {profile?.name?.charAt(0) ?? '?'}
@@ -132,17 +148,21 @@ export default function Navbar() {
           </button>
         </div>
 
-        {/* Móvil: carrito + hamburguesa */}
-        <div className="md:hidden flex items-center gap-2">
+        {/* Móvil: acciones + hamburguesa */}
+        <div className="md:hidden flex items-center gap-1.5">
+
+          {/* NUEVO: Icono Tickets Móvil */}
+          <Link
+            to="/scanner"
+            className={actionBtnClass('/scanner')}
+          >
+            <TicketCheck size={20} />
+          </Link>
 
           {/* Icono carrito móvil */}
           <Link
             to="/cart"
-            className={`relative p-2 rounded-lg transition-colors ${
-              isActive('/cart')
-                ? 'bg-yellow-400 text-black'
-                : 'text-zinc-400 hover:text-white hover:bg-zinc-800'
-            }`}
+            className={actionBtnClass('/cart')}
           >
             <ShoppingCart size={20} />
             {cartCount > 0 && (
@@ -155,7 +175,7 @@ export default function Navbar() {
           {/* Hamburguesa */}
           <button
             onClick={() => setMenuOpen(!menuOpen)}
-            className="flex flex-col gap-1.5 p-2 rounded-lg hover:bg-zinc-800 transition-colors"
+            className="flex flex-col gap-1.5 p-2 rounded-lg hover:bg-zinc-800 transition-colors ml-1"
           >
             <span className={`block w-5 h-0.5 bg-white transition-transform duration-200 ${menuOpen ? 'rotate-45 translate-y-2' : ''}`} />
             <span className={`block w-5 h-0.5 bg-white transition-opacity duration-200 ${menuOpen ? 'opacity-0' : ''}`} />
@@ -190,7 +210,7 @@ export default function Navbar() {
             </div>
           </div>
 
-          {/* Links */}
+          {/* Links principales */}
           <Link
             to="/dashboard"
             onClick={() => setMenuOpen(false)}
@@ -199,6 +219,18 @@ export default function Navbar() {
             }`}
           >
             Productos
+          </Link>
+
+          {/* NUEVO: Link Tickets en menú desplegable */}
+          <Link
+            to="/scanner"
+            onClick={() => setMenuOpen(false)}
+            className={`flex items-center gap-2 px-4 py-3 rounded-lg text-sm font-medium transition-colors ${
+              isActive('/scanner') ? 'bg-yellow-400 text-black' : 'text-zinc-400 hover:text-white hover:bg-zinc-800'
+            }`}
+          >
+            <TicketCheck size={16} />
+            Importar Ticket
           </Link>
 
           {(profile?.role === 'editor' || profile?.role === 'admin') && (

@@ -7,6 +7,7 @@ import Supermarkets from './pages/Supermarkets';
 import Categories from './pages/Categories';
 import Admin from './pages/Admin';
 import Cart from './pages/Cart';
+import TicketScanner from './pages/TicketScanner'; // <-- Importamos la nueva página
 import Navbar from './components/Navbar';
 
 function ProtectedRoute({ children, allowedRoles }) {
@@ -63,6 +64,13 @@ function AppRoutes() {
       <Route path="/cart" element={
         <ProtectedRoute allowedRoles={['user', 'editor', 'admin']}>
           <Navbar /><Cart />
+        </ProtectedRoute>
+      } />
+
+      {/* NUEVA RUTA: Escáner de Tickets */}
+      <Route path="/scanner" element={
+        <ProtectedRoute allowedRoles={['user', 'editor', 'admin']}>
+          <Navbar /><TicketScanner />
         </ProtectedRoute>
       } />
 
