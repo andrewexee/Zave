@@ -49,7 +49,16 @@ const GeminiScanner = ({ onDataExtracted }) => {
                 body: JSON.stringify({
                     contents: [{
                     parts: [
-                        { text: "Analiza el ticket. Devuelve SOLO JSON: {supermarket, date, items: [{raw_text, suggested_price}]}" },
+                        { text: `Analiza este ticket de compra. Extrae la información siguiendo estas reglas ESTRICTAS:
+                            1. **supermarket**: Nombre de la tienda.
+                            2. **date**: Fecha en formato YYYY-MM-DD.
+                            3. **items**: Lista de productos donde:
+                            - **raw_text**: SOLO el nombre del producto combinado con el Peso o Litros en caso de aparecer. Limpia cantidades (ej: "3x", "2 UNID") o prefijos numéricos del nombre.
+                            - **suggested_price**: Debe ser SIEMPRE el PRECIO UNITARIO. 
+                                *Si el ticket dice "3 unidades a 0,92€ -> 2,76€", el valor debe ser 0.92.*
+                                *Si el precio unitario no aparece, divídelo tú: (Precio Total / Cantidad).*
+
+                            Devuelve exclusivamente un objeto JSON, sin markdown ni texto extra.` },
                         { inline_data: { mime_type: file.type || "image/jpeg", data: base64Data } }
                     ]
                     }]
