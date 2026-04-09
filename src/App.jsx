@@ -7,7 +7,8 @@ import Supermarkets from './pages/Supermarkets';
 import Categories from './pages/Categories';
 import Admin from './pages/Admin';
 import Cart from './pages/Cart';
-import TicketScanner from './pages/TicketScanner'; // <-- Importamos la nueva página
+import TicketScanner from './pages/TicketScanner';
+import AdminReview from './pages/AdminReview'; // <-- Importamos la nueva página
 import Navbar from './components/Navbar';
 
 function ProtectedRoute({ children, allowedRoles }) {
@@ -67,10 +68,17 @@ function AppRoutes() {
         </ProtectedRoute>
       } />
 
-      {/* NUEVA RUTA: Escáner de Tickets */}
+      {/* Escáner de Tickets */}
       <Route path="/scanner" element={
         <ProtectedRoute allowedRoles={['user', 'editor', 'admin']}>
           <Navbar /><TicketScanner />
+        </ProtectedRoute>
+      } />
+
+      {/* NUEVA RUTA: Revisión de Precios */}
+      <Route path="/admin/review" element={
+        <ProtectedRoute allowedRoles={['editor', 'admin']}>
+          <Navbar /><AdminReview />
         </ProtectedRoute>
       } />
 

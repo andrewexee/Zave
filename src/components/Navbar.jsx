@@ -2,7 +2,7 @@ import { useState } from 'react';
 import { Link, useLocation } from 'react-router-dom';
 import { useAuth } from '../context/AuthContext';
 import { useCartStore } from '../store/cartStore';
-import { ShoppingCart, TicketCheck } from 'lucide-react'; // Importamos el nuevo icono
+import { ShoppingCart, TicketCheck, Inbox } from 'lucide-react'; // Importamos Inbox
 
 export default function Navbar() {
   const { profile, signOut } = useAuth();
@@ -91,9 +91,21 @@ export default function Navbar() {
         {/* Lado derecho: acciones + usuario + logout — desktop */}
         <div className="hidden md:flex md:flex-1 md:basis-0 items-center justify-end gap-3">
           
-          {/* Contenedor de acciones (Tickets + Carrito) */}
+          {/* Contenedor de acciones (Tickets + Carrito + Revisión) */}
           <div className="flex items-center gap-1.5">
-            {/* NUEVO: Icono Tickets Desktop */}
+            
+            {/* NUEVO: Icono Revisión de Precios Desktop */}
+            {(profile?.role === 'editor' || profile?.role === 'admin') && (
+              <Link
+                to="/admin/review"
+                title="Revisión de Precios"
+                className={actionBtnClass('/admin/review')}
+              >
+                <Inbox size={20} />
+              </Link>
+            )}
+
+            {/* Icono Tickets Desktop */}
             <Link
               to="/scanner"
               title="Importar Ticket"
@@ -151,7 +163,17 @@ export default function Navbar() {
         {/* Móvil: acciones + hamburguesa */}
         <div className="md:hidden flex items-center gap-1.5">
 
-          {/* NUEVO: Icono Tickets Móvil */}
+          {/* NUEVO: Icono Revisión Móvil */}
+          {(profile?.role === 'editor' || profile?.role === 'admin') && (
+            <Link
+              to="/admin/review"
+              className={actionBtnClass('/admin/review')}
+            >
+              <Inbox size={20} />
+            </Link>
+          )}
+
+          {/* Icono Tickets Móvil */}
           <Link
             to="/scanner"
             className={actionBtnClass('/scanner')}
@@ -221,7 +243,21 @@ export default function Navbar() {
             Productos
           </Link>
 
-          {/* NUEVO: Link Tickets en menú desplegable */}
+          {/* NUEVO: Link Revisión en menú desplegable */}
+          {(profile?.role === 'editor' || profile?.role === 'admin') && (
+            <Link
+              to="/admin/review"
+              onClick={() => setMenuOpen(false)}
+              className={`flex items-center gap-2 px-4 py-3 rounded-lg text-sm font-medium transition-colors ${
+                isActive('/admin/review') ? 'bg-yellow-400 text-black' : 'text-zinc-400 hover:text-white hover:bg-zinc-800'
+              }`}
+            >
+              <Inbox size={16} />
+              Revisión de Precios
+            </Link>
+          )}
+
+          {/* Link Tickets en menú desplegable */}
           <Link
             to="/scanner"
             onClick={() => setMenuOpen(false)}

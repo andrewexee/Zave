@@ -3,19 +3,20 @@ import supabase from '../supabaseClient';
 import GeminiScanner from '../components/GeminiScanner';
 
 const TicketScanner = () => {
-  // Ahora manejamos los items escaneados localmente antes de enviarlos
   const [scannedItems, setScannedItems] = useState([]);
   const [supermarkets, setSupermarkets] = useState([]);
   const [user, setUser] = useState(null);
   const [showSuccess, setShowSuccess] = useState(false);
   const [loading, setLoading] = useState(false);
 
+  // --- Lógica de Paginación ---
+  const [currentPage, setCurrentPage] = useState(1);
+  const itemsPerPage = 10;
+
   useEffect(() => {
     const init = async () => {
       const { data: { user: currentUser } } = await supabase.auth.getUser();
       setUser(currentUser);
-
-      // Solo necesitamos los supermercados para el mapeo inicial
       const { data: s } = await supabase.from('supermarkets').select('id, name');
       setSupermarkets(s || []);
     };
@@ -26,7 +27,6 @@ const TicketScanner = () => {
     const { items, supermarket, date } = data;
     const batchId = Math.random().toString(36).substr(2, 9);
 
-    // Mapeo automático de Supermercado
     const matchedSuper = supermarkets.find(s => 
       s.name.toUpperCase().includes(supermarket.toUpperCase()) || 
       supermarket.toUpperCase().includes(s.name.toUpperCase())
@@ -37,10 +37,9 @@ const TicketScanner = () => {
       return;
     }
 
-    // Guardamos en el estado local para que el usuario revise
     const newItems = items.map(item => ({
       ...item,
-      id: Math.random().toString(36).substr(2, 9), // ID local para el borrado
+      id: Math.random().toString(36).substr(2, 9),
       supermarket_id: matchedSuper.id,
       supermarket_name: matchedSuper.name,
       purchase_date: date,
@@ -48,11 +47,19 @@ const TicketScanner = () => {
     }));
 
     setScannedItems(newItems);
+    setCurrentPage(1); // Resetear a la primera página tras nuevo escaneo
     setShowSuccess(false);
   };
 
   const removeItem = (id) => {
-    setScannedItems(prev => prev.filter(item => item.id !== id));
+    const updatedItems = scannedItems.filter(item => item.id !== id);
+    setScannedItems(updatedItems);
+    
+    // Si borramos el último item de una página, retrocedemos una
+    const totalPages = Math.ceil(updatedItems.length / itemsPerPage);
+    if (currentPage > totalPages && totalPages > 0) {
+      setCurrentPage(totalPages);
+    }
   };
 
   const submitSuggestions = async () => {
@@ -76,12 +83,17 @@ const TicketScanner = () => {
     if (!error) {
       setScannedItems([]);
       setShowSuccess(true);
-      // Ocultar mensaje de éxito tras 5 segundos
       setTimeout(() => setShowSuccess(false), 5000);
     } else {
       alert("Error al enviar las sugerencias");
     }
   };
+
+  // Cálculos para la paginación
+  const indexOfLastItem = currentPage * itemsPerPage;
+  const indexOfFirstItem = indexOfLastItem - itemsPerPage;
+  const currentItems = scannedItems.slice(indexOfFirstItem, indexOfLastItem);
+  const totalPages = Math.ceil(scannedItems.length / itemsPerPage);
 
   return (
     <div className="min-h-screen bg-black text-white p-8">
@@ -94,26 +106,42 @@ const TicketScanner = () => {
 
         <GeminiScanner onDataExtracted={handleDataExtracted} />
 
-        {/* Mensaje de éxito */}
         {showSuccess && (
-          <div className="bg-green-500/10 border border-green-500/50 text-green-500 p-4 rounded-2xl text-center font-bold animate-pulse">
+          <div className="bg-green-500/10 border border-green-500/50 text-green-500 p-4 rounded-2xl text-center font-bold">
             ¡Sugerencias enviadas con éxito! Un editor las revisará pronto.
           </div>
         )}
 
-        {/* Resumen de productos escaneados */}
         {scannedItems.length > 0 && (
           <section className="space-y-6 animate-in fade-in slide-in-from-bottom-4 duration-500">
             <div className="flex justify-between items-center border-b border-zinc-800 pb-4">
-              <h2 className="text-xs font-bold text-zinc-500 uppercase tracking-widest">Productos detectados</h2>
-              <span className="bg-zinc-800 px-3 py-1 rounded-full text-[10px] font-bold text-zinc-400">
-                {scannedItems.length} items
-              </span>
+              <h2 className="text-xs font-bold text-zinc-500 uppercase tracking-widest">
+                Productos detectados ({scannedItems.length})
+              </h2>
+              <div className="flex items-center gap-2">
+                <span className="text-[10px] font-bold text-zinc-500 mr-2">
+                  PÁGINA {currentPage} DE {totalPages}
+                </span>
+                <button 
+                  disabled={currentPage === 1}
+                  onClick={() => setCurrentPage(p => p - 1)}
+                  className="w-8 h-8 flex items-center justify-center bg-zinc-900 border border-zinc-800 rounded-lg disabled:opacity-30"
+                >
+                  ←
+                </button>
+                <button 
+                  disabled={currentPage === totalPages}
+                  onClick={() => setCurrentPage(p => p + 1)}
+                  className="w-8 h-8 flex items-center justify-center bg-zinc-900 border border-zinc-800 rounded-lg disabled:opacity-30"
+                >
+                  →
+                </button>
+              </div>
             </div>
 
             <div className="grid gap-3">
-              {scannedItems.map((item) => (
-                <div key={item.id} className="bg-zinc-900/40 border border-zinc-800 p-4 rounded-2xl flex items-center justify-between group hover:border-zinc-700 transition-colors">
+              {currentItems.map((item) => (
+                <div key={item.id} className="bg-zinc-900/40 border border-zinc-800 p-4 rounded-2xl flex items-center justify-between group">
                   <div className="flex flex-col">
                     <span className="text-zinc-100 font-bold">{item.raw_text}</span>
                     <span className="text-[10px] text-zinc-500 uppercase font-black">{item.supermarket_name} • {item.purchase_date}</span>
@@ -124,26 +152,31 @@ const TicketScanner = () => {
                     <button 
                       onClick={() => removeItem(item.id)}
                       className="p-2 text-zinc-600 hover:text-red-500 transition-colors"
-                      title="Eliminar producto"
                     >
-                      <span className="text-xl">×</span>
+                      ×
                     </button>
                   </div>
                 </div>
               ))}
             </div>
 
-            <button 
-              onClick={submitSuggestions}
-              disabled={loading}
-              className={`w-full py-4 rounded-2xl font-black uppercase tracking-widest transition-all ${
-                loading 
-                ? 'bg-zinc-800 text-zinc-500 cursor-not-allowed' 
-                : 'bg-white text-black hover:bg-zinc-200 shadow-xl shadow-white/5'
-              }`}
-            >
-              {loading ? 'Enviando...' : 'Sugerir Precios'}
-            </button>
+            <div className="pt-4 space-y-4">
+              <button 
+                onClick={submitSuggestions}
+                disabled={loading}
+                className={`w-full py-4 rounded-2xl font-black uppercase tracking-widest transition-all ${
+                  loading 
+                  ? 'bg-zinc-800 text-zinc-500 cursor-not-allowed' 
+                  : 'bg-white text-black hover:bg-zinc-200'
+                }`}
+              >
+                {loading ? 'Enviando...' : `Sugerir ${scannedItems.length} Precios`}
+              </button>
+              
+              <p className="text-center text-[10px] text-zinc-600 font-bold uppercase tracking-tighter">
+                Nota: Se enviarán todos los productos de la lista, no solo los de la página actual.
+              </p>
+            </div>
           </section>
         )}
       </div>
