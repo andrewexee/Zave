@@ -1,98 +1,92 @@
 import React, { useState } from 'react';
-import * as pdfjs from 'pdfjs-dist';
-import { Upload, FileText, Loader2, CheckCircle2 } from 'lucide-react';
-
-// ESTO ES EL "WORKER": Configuración directa dentro del componente
-// Configuración específica para pdfjs-dist 5.x y Vite
-const workerUrl = new URL(
-  'pdfjs-dist/build/pdf.worker.min.mjs',
-  import.meta.url
-).toString();
-
-pdfjs.GlobalWorkerOptions.workerSrc = workerUrl;
 
 const PdfScanner = ({ onDataExtracted }) => {
   const [isProcessing, setIsProcessing] = useState(false);
-  const [error, setError] = useState(null);
 
-  const extractTextFromPdf = async (file) => {
+  const generateUUID = () => {
+    return (typeof crypto.randomUUID === 'function') 
+      ? crypto.randomUUID() 
+      : Math.random().toString(36).substring(2, 15);
+  };
+
+  const parseFullTicket = (text) => {
+    const lines = text.split('\n').map(l => l.trim());
+    const batchId = generateUUID();
+    const allItems = [];
+    const blacklist = ["DESCRIPCIÓN", "P. UNIT", "IMPORTE", "CUOTA", "IVA", "TOTAL", "MERCADONA", "FACTURA", "ARTÍCULOS"];
+
+    lines.forEach((line, index) => {
+      if (blacklist.some(word => line.toUpperCase().includes(word))) return;
+
+      const columns = line.split('|').map(c => c.trim());
+      const pricesInLine = line.match(/(\d+[.,]\d{2})/g);
+      
+      if (pricesInLine) {
+        let unitPrice = parseFloat(pricesInLine[0].replace(',', '.'));
+        
+        // Si hay columnas, intentamos ser más precisos con el P.Unit
+        if (columns.length >= 3 && columns[1] !== "") {
+          unitPrice = parseFloat(columns[1].replace(',', '.'));
+        }
+
+        let rawName = columns[0] || line;
+        let finalName = rawName.replace(/^[\d\s]+/, "").replace(/[|€]/g, "").trim();
+
+        // Si no hay letras (solo números/ruido), buscamos el nombre arriba
+        if (!/[a-zA-Z]{3,}/.test(finalName) && lines[index - 1]) {
+          let prev = lines[index - 1];
+          finalName = prev.toLowerCase().includes("kg") ? `${lines[index - 2]} (${prev})` : prev;
+        }
+
+        if (finalName.length > 2 && unitPrice > 0) {
+          allItems.push({
+            raw_text: finalName.toUpperCase(),
+            suggested_price: unitPrice,
+            batch_id: batchId
+          });
+        }
+      }
+    });
+
+    return { allItems: allItems.filter((v,i,a) => a.findIndex(t => t.raw_text === v.raw_text) === i) };
+  };
+
+  const handleFileUpload = async (e) => {
+    const file = e.target.files[0];
+    if (!file) return;
     setIsProcessing(true);
-    setError(null);
-    
+
+    const formData = new FormData();
+    formData.append('file', file);
+    formData.append('apikey', 'K86510600888957'); 
+    formData.append('language', 'spa');
+
     try {
-      const arrayBuffer = await file.arrayBuffer();
-      
-      // Añadimos parámetros de compatibilidad para móviles
-      const loadingTask = pdfjs.getDocument({
-        data: arrayBuffer,
-        disableFontFace: true, // Evita errores de fuentes en iOS
-        verbosity: 0           // Evita que los warnings inunden la consola
-      });
-
-      const pdf = await loadingTask.promise;
-      let fullText = "";
-
-      // Analizamos máximo 2 páginas para no saturar la RAM del móvil
-      const pagesToRead = Math.min(pdf.numPages, 2);
-      
-      for (let i = 1; i <= pagesToRead; i++) {
-        const page = await pdf.getPage(i);
-        const textContent = await page.getTextContent();
-        const strings = textContent.items.map(item => item.str);
-        fullText += strings.join(" ") + "\n";
+      const response = await fetch('https://api.ocr.space/parse/image', { method: 'POST', body: formData });
+      const result = await response.json();
+      if (result.ParsedResults?.[0]) {
+        const { allItems } = parseFullTicket(result.ParsedResults[0].ParsedText);
+        onDataExtracted(allItems);
       }
-
-      if (fullText.trim().length === 0) {
-        throw new Error("No se pudo extraer texto del PDF");
-      }
-
-      onDataExtracted(fullText);
-    } catch (err) {
-      console.error("Error en móvil:", err);
-      // Mensaje más descriptivo para ayudar al usuario
-      setError("El móvil bloqueó el análisis. Intenta actualizar el sistema o usa el PC.");
+    } catch (error) {
+      console.error(error);
     } finally {
       setIsProcessing(false);
     }
   };
 
   return (
-    <div className="w-full max-w-2xl mx-auto p-4">
-      <div 
-        className={`relative border-2 border-dashed rounded-3xl p-8 transition-all flex flex-col items-center justify-center
-          ${isProcessing ? 'border-yellow-400 bg-yellow-400/5' : 'border-zinc-800 hover:border-zinc-700 bg-zinc-900/50'}`}
-      >
-        <input 
-          type="file" 
-          accept="application/pdf"
-          onChange={(e) => e.target.files[0] && extractTextFromPdf(e.target.files[0])}
-          className="absolute inset-0 w-full h-full opacity-0 cursor-pointer"
-          disabled={isProcessing}
-        />
-
-        {isProcessing ? (
-          <div className="flex flex-col items-center">
-            <Loader2 className="w-10 h-10 text-yellow-400 animate-spin mb-4" />
-            <p className="text-white font-medium">Analizando ticket...</p>
-          </div>
-        ) : (
-          <div className="flex flex-col items-center text-center">
-            <div className="bg-zinc-800 p-4 rounded-full mb-4">
-              <Upload className="w-8 h-8 text-zinc-400" />
-            </div>
-            <h3 className="text-white font-bold text-lg mb-2">Subir Ticket Digital</h3>
-            <p className="text-zinc-500 text-sm max-w-xs">
-              Arrastra tu PDF aquí o pulsa para buscar. Solo archivos de supermercados (Mercadona, Lidl, etc.)
-            </p>
-          </div>
-        )}
-      </div>
-
-      {error && (
-        <div className="mt-4 p-4 bg-red-500/10 border border-red-500/20 rounded-2xl text-red-500 text-sm">
-          {error}
+    <div className="p-10 bg-zinc-900/50 border-2 border-dashed border-zinc-800 rounded-[2rem] text-center hover:border-yellow-500/50 transition-all cursor-pointer relative overflow-hidden">
+      <input type="file" onChange={handleFileUpload} className="absolute inset-0 opacity-0 cursor-pointer" />
+      <div className="space-y-3">
+        <div className="w-16 h-16 bg-zinc-800 rounded-2xl flex items-center justify-center mx-auto mb-4">
+          <span className="text-3xl">{isProcessing ? "⏳" : "📄"}</span>
         </div>
-      )}
+        <p className="text-white font-bold tracking-tight">
+          {isProcessing ? "EXTRAYENDO PRODUCTOS..." : "SOLTAR TICKET AQUÍ"}
+        </p>
+        <p className="text-xs text-zinc-500 uppercase tracking-widest font-bold">PDF o Imagen del ticket</p>
+      </div>
     </div>
   );
 };
