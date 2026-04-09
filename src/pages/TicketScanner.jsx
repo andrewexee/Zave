@@ -3,173 +3,149 @@ import supabase from '../supabaseClient';
 import GeminiScanner from '../components/GeminiScanner';
 
 const TicketScanner = () => {
-  const [pendingItems, setPendingItems] = useState([]);
-  const [dbProducts, setDbProducts] = useState([]);
+  // Ahora manejamos los items escaneados localmente antes de enviarlos
+  const [scannedItems, setScannedItems] = useState([]);
   const [supermarkets, setSupermarkets] = useState([]);
-  const [userMap, setUserMap] = useState({});
   const [user, setUser] = useState(null);
+  const [showSuccess, setShowSuccess] = useState(false);
+  const [loading, setLoading] = useState(false);
 
   useEffect(() => {
     const init = async () => {
       const { data: { user: currentUser } } = await supabase.auth.getUser();
       setUser(currentUser);
 
-      // Carga de maestros
-      const [{ data: p }, { data: s }, { data: u }] = await Promise.all([
-        supabase.from('products').select('id, name').order('name'),
-        supabase.from('supermarkets').select('id, name'),
-        supabase.from('users').select('id, email')
-      ]);
-
-      setDbProducts(p || []);
+      // Solo necesitamos los supermercados para el mapeo inicial
+      const { data: s } = await supabase.from('supermarkets').select('id, name');
       setSupermarkets(s || []);
-      
-      const map = {};
-      u?.forEach(usr => map[usr.id] = usr.email);
-      setUserMap(map);
-
-      fetchSuggestions();
     };
     init();
   }, []);
 
-  const fetchSuggestions = async () => {
-    const { data } = await supabase
-      .from('price_suggestions')
-      .select(`
-        *,
-        products (
-          name,
-          product_prices ( price, supermarket_id )
-        )
-      `)
-      .eq('status', 'pending')
-      .order('created_at', { ascending: false });
-    setPendingItems(data || []);
-  };
-
-  const handleDataExtracted = async (data) => {
+  const handleDataExtracted = (data) => {
     const { items, supermarket, date } = data;
     const batchId = Math.random().toString(36).substr(2, 9);
 
-    // Mapeo automático de Supermercado por nombre
+    // Mapeo automático de Supermercado
     const matchedSuper = supermarkets.find(s => 
       s.name.toUpperCase().includes(supermarket.toUpperCase()) || 
       supermarket.toUpperCase().includes(s.name.toUpperCase())
     );
 
     if (!matchedSuper) {
-      alert(`No se reconoció el supermercado: ${supermarket}. Por favor, asegúrate de que existe en la base de datos.`);
+      alert(`No se reconoció el supermercado: ${supermarket}. Debe existir en la BD.`);
       return;
     }
 
+    // Guardamos en el estado local para que el usuario revise
+    const newItems = items.map(item => ({
+      ...item,
+      id: Math.random().toString(36).substr(2, 9), // ID local para el borrado
+      supermarket_id: matchedSuper.id,
+      supermarket_name: matchedSuper.name,
+      purchase_date: date,
+      batch_id: batchId
+    }));
+
+    setScannedItems(newItems);
+    setShowSuccess(false);
+  };
+
+  const removeItem = (id) => {
+    setScannedItems(prev => prev.filter(item => item.id !== id));
+  };
+
+  const submitSuggestions = async () => {
+    if (scannedItems.length === 0) return;
+    setLoading(true);
+
     const { error } = await supabase.from('price_suggestions').insert(
-      items.map(item => ({
+      scannedItems.map(item => ({
         raw_text: item.raw_text,
         suggested_price: item.suggested_price,
-        supermarket_id: matchedSuper.id,
-        purchase_date: date,
+        supermarket_id: item.supermarket_id,
+        purchase_date: item.purchase_date,
         user_id: user?.id,
-        batch_id: batchId,
+        batch_id: item.batch_id,
         status: 'pending'
       }))
     );
 
-    if (!error) fetchSuggestions();
-  };
+    setLoading(false);
 
-  const handleAccept = async (item) => {
-    if (!item.product_id) return alert("Asocia un producto");
-    
-    await Promise.all([
-      supabase.from('product_aliases').upsert({
-        ticket_text: item.raw_text,
-        product_id: item.product_id,
-        supermarket_id: item.supermarket_id,
-        is_verified: true
-      }),
-      supabase.from('product_prices').upsert({
-        product_id: item.product_id,
-        supermarket_id: item.supermarket_id,
-        price: item.suggested_price
-      }),
-      supabase.from('price_suggestions').update({ status: 'approved' }).eq('id', item.id)
-    ]);
-    fetchSuggestions();
+    if (!error) {
+      setScannedItems([]);
+      setShowSuccess(true);
+      // Ocultar mensaje de éxito tras 5 segundos
+      setTimeout(() => setShowSuccess(false), 5000);
+    } else {
+      alert("Error al enviar las sugerencias");
+    }
   };
 
   return (
     <div className="min-h-screen bg-black text-white p-8">
-      <div className="max-w-6xl mx-auto space-y-12">
+      <div className="max-w-4xl mx-auto space-y-12">
         
         <header>
-          <h1 className="text-3xl font-black uppercase tracking-tighter text-zinc-200">Gestión de Tickets</h1>
-          <p className="text-zinc-500 text-sm font-medium">Validación de precios extraídos mediante IA</p>
+          <h1 className="text-3xl font-black uppercase tracking-tighter text-zinc-200">Escanear Ticket</h1>
+          <p className="text-zinc-500 text-sm font-medium">Los productos serán enviados a revisión por un moderador</p>
         </header>
 
         <GeminiScanner onDataExtracted={handleDataExtracted} />
 
-        <section className="space-y-6">
-          <div className="flex justify-between items-center border-b border-zinc-800 pb-4">
-            <h2 className="text-xs font-bold text-zinc-500 uppercase tracking-widest">Sugerencias Pendientes</h2>
-            <span className="bg-zinc-800 px-3 py-1 rounded-full text-[10px] font-bold text-zinc-400">{pendingItems.length}</span>
+        {/* Mensaje de éxito */}
+        {showSuccess && (
+          <div className="bg-green-500/10 border border-green-500/50 text-green-500 p-4 rounded-2xl text-center font-bold animate-pulse">
+            ¡Sugerencias enviadas con éxito! Un editor las revisará pronto.
           </div>
-          
-          <div className="grid gap-4">
-            {pendingItems.map((item) => {
-              const currentPrice = item.products?.product_prices?.find(p => p.supermarket_id === item.supermarket_id)?.price || 0;
+        )}
 
-              return (
-                <div key={item.id} className="bg-zinc-900/40 border border-zinc-800 p-6 rounded-3xl flex flex-col lg:flex-row items-center gap-8 transition-all hover:bg-zinc-900/60">
+        {/* Resumen de productos escaneados */}
+        {scannedItems.length > 0 && (
+          <section className="space-y-6 animate-in fade-in slide-in-from-bottom-4 duration-500">
+            <div className="flex justify-between items-center border-b border-zinc-800 pb-4">
+              <h2 className="text-xs font-bold text-zinc-500 uppercase tracking-widest">Productos detectados</h2>
+              <span className="bg-zinc-800 px-3 py-1 rounded-full text-[10px] font-bold text-zinc-400">
+                {scannedItems.length} items
+              </span>
+            </div>
+
+            <div className="grid gap-3">
+              {scannedItems.map((item) => (
+                <div key={item.id} className="bg-zinc-900/40 border border-zinc-800 p-4 rounded-2xl flex items-center justify-between group hover:border-zinc-700 transition-colors">
+                  <div className="flex flex-col">
+                    <span className="text-zinc-100 font-bold">{item.raw_text}</span>
+                    <span className="text-[10px] text-zinc-500 uppercase font-black">{item.supermarket_name} • {item.purchase_date}</span>
+                  </div>
                   
-                  <div className="flex-1 w-full space-y-4">
-                    <div className="flex items-center gap-4">
-                      <div className="px-3 py-1 bg-zinc-800 rounded-lg text-[10px] font-bold text-zinc-400">
-                        {item.purchase_date || "S/FECHA"}
-                      </div>
-                      <p className="text-lg font-bold text-zinc-100 italic">"{item.raw_text}"</p>
-                    </div>
-                    
-                    <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
-                      <select 
-                        className="w-full bg-black border border-zinc-800 p-3 rounded-xl text-xs font-bold outline-none focus:border-zinc-500"
-                        value={item.product_id || ""}
-                        onChange={(e) => setPendingItems(prev => prev.map(i => i.id === item.id ? {...i, product_id: e.target.value} : i))}
-                      >
-                        <option value="">Vincular con Producto...</option>
-                        {dbProducts.map(p => <option key={p.id} value={p.id}>{p.name}</option>)}
-                      </select>
-                      <div className="bg-zinc-800/20 p-3 rounded-xl text-[10px] font-mono text-zinc-500 flex items-center">
-                        <span className="mr-2 uppercase font-black text-zinc-600">Usuario:</span> {userMap[item.user_id] || "SISTEMA"}
-                      </div>
-                    </div>
-                  </div>
-
-                  <div className="flex items-center gap-6 bg-black/40 p-5 rounded-2xl border border-zinc-800">
-                    <div className="text-center min-w-[80px]">
-                      <p className="text-[9px] text-zinc-500 font-bold uppercase mb-1 tracking-tighter">Precio Ticket</p>
-                      <p className="text-2xl font-black text-white">{item.suggested_price?.toFixed(2)}€</p>
-                    </div>
-                    <div className="w-px h-10 bg-zinc-800" />
-                    <div className="text-center min-w-[80px]">
-                      <p className="text-[9px] text-zinc-500 font-bold uppercase mb-1 tracking-tighter">Actual DB</p>
-                      <p className="text-lg font-bold text-zinc-600">{currentPrice > 0 ? currentPrice.toFixed(2) + "€" : "—"}</p>
-                    </div>
-                  </div>
-
-                  <div className="flex gap-2 w-full lg:w-auto">
-                    <button onClick={() => handleAccept(item)} className="flex-1 lg:w-14 h-14 bg-zinc-100 text-black rounded-2xl hover:bg-white transition-all flex items-center justify-center shadow-xl shadow-white/5">
-                      <span className="text-xl font-bold">+</span>
-                    </button>
-                    <button className="flex-1 lg:w-14 h-14 bg-zinc-800 text-zinc-400 rounded-2xl hover:bg-zinc-700 transition-all flex items-center justify-center">
-                      <span className="text-xl font-bold">×</span>
+                  <div className="flex items-center gap-4">
+                    <span className="text-xl font-black text-white">{item.suggested_price.toFixed(2)}€</span>
+                    <button 
+                      onClick={() => removeItem(item.id)}
+                      className="p-2 text-zinc-600 hover:text-red-500 transition-colors"
+                      title="Eliminar producto"
+                    >
+                      <span className="text-xl">×</span>
                     </button>
                   </div>
                 </div>
-              );
-            })}
-          </div>
-        </section>
+              ))}
+            </div>
+
+            <button 
+              onClick={submitSuggestions}
+              disabled={loading}
+              className={`w-full py-4 rounded-2xl font-black uppercase tracking-widest transition-all ${
+                loading 
+                ? 'bg-zinc-800 text-zinc-500 cursor-not-allowed' 
+                : 'bg-white text-black hover:bg-zinc-200 shadow-xl shadow-white/5'
+              }`}
+            >
+              {loading ? 'Enviando...' : 'Sugerir Precios'}
+            </button>
+          </section>
+        )}
       </div>
     </div>
   );
