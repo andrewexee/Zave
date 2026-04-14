@@ -100,7 +100,7 @@ const TicketScanner = () => {
       <div className="max-w-4xl mx-auto space-y-12">
         
         <header>
-          <h1 className="text-3xl font-black uppercase tracking-tighter text-zinc-200">Escanear Ticket</h1>
+          <h1 className="text-4xl font-black tracking-tighter text-zinc-200">Escanear Ticket</h1>
           <p className="text-zinc-500 text-sm font-medium">Los productos serán enviados a revisión por un moderador</p>
         </header>
 

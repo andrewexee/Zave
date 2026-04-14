@@ -161,7 +161,7 @@ const AdminReview = () => {
       <div className="max-w-6xl mx-auto space-y-8 md:space-y-12">
         
         <header>
-          <h1 className="text-3xl font-black uppercase tracking-tighter text-yellow-400">Moderación</h1>
+          <h1 className="text-4xl font-black tracking-tighter text-yellow-400">Moderación</h1>
           <p className="text-zinc-500 text-sm font-medium mt-1">Gestión de precios sugeridos por escáner de tickets</p>
         </header>
 
