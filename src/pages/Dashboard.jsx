@@ -145,40 +145,71 @@ export default function Dashboard() {
     setSaving(true);
     setError('');
 
-    const payload = {
-      name: productName.trim(),
-      description: productDescription.trim() || null,
-      weight_grams: weightInGrams,
-      category_id: productCategory !== '' ? parseInt(productCategory) : null,
-    };
+    try {
+      const payload = {
+        name: productName.trim(),
+        description: productDescription.trim() || null,
+        weight_grams: weightInGrams,
+        category_id: productCategory !== '' ? parseInt(productCategory) : null,
+      };
 
-    let productId = editingProduct?.id;
+      let productId = editingProduct?.id;
 
-    if (editingProduct) {
-      await supabase.from('products').update(payload).eq('id', productId);
-    } else {
-      const { data } = await supabase.from('products').insert(payload).select().single();
-      productId = data.id;
-    }
-
-    for (const [supermarketId, price] of Object.entries(productPrices)) {
-      const numericPrice = parseFloat(price);
-      if (isNaN(numericPrice) || price === '') {
-        await supabase
-          .from('product_prices')
-          .delete()
-          .eq('product_id', productId)
-          .eq('supermarket_id', supermarketId);
+      // 1. Guardar/Actualizar información básica del producto
+      if (editingProduct) {
+        const { error: updateError } = await supabase
+          .from('products')
+          .update(payload)
+          .eq('id', productId);
+        if (updateError) throw updateError;
       } else {
-        await supabase
-          .from('product_prices')
-          .upsert({ product_id: productId, supermarket_id: parseInt(supermarketId), price: numericPrice });
+        const { data, error: insertError } = await supabase
+          .from('products')
+          .insert(payload)
+          .select()
+          .single();
+        if (insertError) throw insertError;
+        productId = data.id;
       }
-    }
 
-    setSaving(false);
-    setShowModal(false);
-    fetchData();
+      // 2. Gestionar los precios por supermercado
+      // Usamos un bucle para procesar cada precio
+      for (const [supermarketId, price] of Object.entries(productPrices)) {
+        const numericPrice = parseFloat(price);
+        const sId = parseInt(supermarketId);
+
+        if (isNaN(numericPrice) || price === '') {
+          // Si el precio está vacío, lo borramos de la BD
+          await supabase
+            .from('product_prices')
+            .delete()
+            .eq('product_id', productId)
+            .eq('supermarket_id', sId); // Corregido: pasamos el ID como número
+        } else {
+          // Si hay precio, usamos UPSERT especificando el conflicto
+          // Esto es vital para que sepa que si ya existe el par (producto, súper), debe actualizar
+          await supabase
+            .from('product_prices')
+            .upsert(
+              { 
+                product_id: productId, 
+                supermarket_id: sId, 
+                price: numericPrice 
+              },
+              { onConflict: 'product_id, supermarket_id' } // <--- ESTO ES LO QUE FALTABA
+            );
+        }
+      }
+
+      // 3. Finalizar y refrescar
+      await fetchData(); // Esperamos a que los datos nuevos lleguen
+      setShowModal(false);
+    } catch (err) {
+      console.error("Error al guardar:", err);
+      setError('Error al guardar los cambios en la base de datos.');
+    } finally {
+      setSaving(false);
+    }
   };
 
   const handleDelete = async (productId) => {
