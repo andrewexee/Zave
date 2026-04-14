@@ -13,21 +13,21 @@ const AdminReview = () => {
   const fetchData = async () => {
     setLoading(true);
     try {
-      // 1. Cargamos todos los productos oficiales (para el selector)
+      // 1. Cargamos productos con sus precios para que el "Actual BD" sea dinámico
+      // Añadimos product_prices a la selección
       const { data: products } = await supabase
         .from('products')
-        .select('id, name')
+        .select('id, name, product_prices ( price, supermarket_id )')
         .order('name');
       
       setDbProducts(products || []);
 
-      // 2. Cargamos las sugerencias pendientes y sus relaciones
+      // 2. Cargamos las sugerencias pendientes
       const { data: suggestions } = await supabase
         .from('price_suggestions')
         .select(`
           *,
-          supermarkets ( name ),
-          products ( name, product_prices ( price, supermarket_id ) )
+          supermarkets ( name )
         `)
         .eq('status', 'pending')
         .order('created_at', { ascending: false });
@@ -38,14 +38,14 @@ const AdminReview = () => {
         return;
       }
 
-      // 3. AUTO-LOOKUP: Buscamos si ya existen alias para estos textos
+      // 3. AUTO-LOOKUP: Buscamos si ya existen alias
       const rawTexts = suggestions.map(s => s.raw_text);
       const { data: aliases } = await supabase
         .from('product_aliases')
         .select('ticket_text, product_id, supermarket_id')
         .in('ticket_text', rawTexts);
 
-      // 4. Cruzamos los datos: Si hay un alias que coincide, pre-seleccionamos el producto
+      // 4. Cruzamos datos
       const itemsWithAutoSelect = suggestions.map(item => {
         const matchingAlias = aliases?.find(a => 
           a.ticket_text === item.raw_text && a.supermarket_id === item.supermarket_id
@@ -53,7 +53,7 @@ const AdminReview = () => {
         
         return {
           ...item,
-          // Si encontró un alias, usa ese product_id, si no, lo deja vacío para que el admin elija
+          // Priorizamos el alias encontrado, luego el product_id de la sugerencia, o vacío
           selected_product_id: matchingAlias ? matchingAlias.product_id : (item.product_id || "")
         };
       });
@@ -79,30 +79,25 @@ const AdminReview = () => {
     }
 
     try {
-      // Ejecutamos las 3 operaciones en paralelo para mayor rapidez
       await Promise.all([
-        // 1. Crear o actualizar el Alias
         supabase.from('product_aliases').upsert({
           ticket_text: item.raw_text,
           product_id: item.selected_product_id,
           supermarket_id: item.supermarket_id,
           is_verified: true
-        }, { onConflict: 'ticket_text, supermarket_id' }), // Asegúrate de que las constraints coincidan con tu BD
+        }, { onConflict: 'ticket_text, supermarket_id' }),
 
-        // 2. Actualizar el precio oficial del producto en ese supermercado
         supabase.from('product_prices').upsert({
           product_id: item.selected_product_id,
           supermarket_id: item.supermarket_id,
           price: item.suggested_price
         }, { onConflict: 'product_id, supermarket_id' }),
 
-        // 3. Marcar la sugerencia como aprobada
         supabase.from('price_suggestions')
           .update({ status: 'approved', product_id: item.selected_product_id })
           .eq('id', item.id)
       ]);
 
-      // Refrescamos la lista para quitar el elemento aceptado
       fetchData();
     } catch (error) {
       console.error("Error al aceptar sugerencia:", error);
@@ -120,7 +115,6 @@ const AdminReview = () => {
         .update({ status: 'rejected' })
         .eq('id', id);
       
-      // Filtramos localmente para que sea instantáneo sin recargar todo de nuevo
       setPendingItems(prev => prev.filter(item => item.id !== id));
     } catch (error) {
       console.error("Error al rechazar:", error);
@@ -156,12 +150,17 @@ const AdminReview = () => {
             
             <div className="grid gap-4">
               {pendingItems.map((item) => {
-                // Buscamos el precio actual en la base de datos si es que ya existe
-                const currentPrice = item.products?.product_prices?.find(
-                  p => p.supermarket_id === item.supermarket_id
+                
+                // --- LOGICA CORREGIDA PARA PRECIO DINÁMICO ---
+                // 1. Buscamos el objeto del producto seleccionado en nuestra lista global dbProducts
+                const selectedProdData = dbProducts.find(p => String(p.id) === String(item.selected_product_id));
+                
+                // 2. De ese producto, extraemos el precio que corresponde al supermercado del ticket
+                const currentPrice = selectedProdData?.product_prices?.find(
+                  pp => pp.supermarket_id === item.supermarket_id
                 )?.price || 0;
+                // ---------------------------------------------
 
-                // Verificamos si el componente hizo Auto-Select
                 const isAutoSelected = !!item.selected_product_id;
 
                 return (
@@ -204,7 +203,9 @@ const AdminReview = () => {
                       <div className="w-px h-10 bg-zinc-800" />
                       <div className="text-center min-w-[80px]">
                         <p className="text-[9px] text-zinc-500 font-bold uppercase mb-1 tracking-tighter">Actual BD</p>
-                        <p className="text-lg font-bold text-zinc-600">{currentPrice > 0 ? currentPrice.toFixed(2) + "€" : "—"}</p>
+                        <p className="text-lg font-bold text-zinc-600">
+                          {currentPrice > 0 ? parseFloat(currentPrice).toFixed(2) + "€" : "—"}
+                        </p>
                       </div>
                     </div>
 
