@@ -1,6 +1,11 @@
 import { useState } from 'react';
 import { useNavigate, Link } from 'react-router-dom';
 import supabase from '../supabaseClient';
+import { motion } from 'framer-motion'; 
+import { 
+  ShoppingCart, Ticket, CircleDollarSign, Inbox, Tag, 
+  Store, Package, ShoppingBag 
+} from 'lucide-react';
 
 export default function Register() {
   const navigate = useNavigate();
@@ -42,9 +47,83 @@ export default function Register() {
     setLoading(false);
   };
 
+  const iconList = [
+    ShoppingCart, Ticket, CircleDollarSign, Inbox, Tag, 
+    Store, Package, ShoppingBag
+  ];
+
+  // CONFIGURACIÓN DE BUCLE MATEMÁTICO PERFECTO
+  const ICON_SIZE = 32;
+  const GAP = 64; 
+  const UNIT = ICON_SIZE + GAP; // 96px
+
+  // Para que el bucle sea invisible con 8 iconos:
+  // Movemos exactamente 8 unidades (8 * 96 = 768px)
+  const LOOP_DISTANCE = UNIT * 8; 
+
+  // Usamos 40 columnas (múltiplo de 8) para que cada fila encaje perfectamente
+  const COLS = 40; 
+  const ROWS = 40; 
+  const WIDTH = COLS * UNIT; 
+  const HEIGHT = ROWS * UNIT;
+
   return (
-    <div className="min-h-screen bg-black flex items-center justify-center px-4 py-8">
-      <div className="w-full max-w-md">
+    <div className="relative min-h-screen bg-black flex items-center justify-center px-4 py-8 overflow-hidden">
+      
+      {/* CAPA DE FONDO: EL "SUEÑO" DEL BUCLE INFINITO */}
+      <div className="absolute inset-0 z-0 pointer-events-none overflow-hidden">
+        <motion.div 
+          initial={{ x: 0, y: 0 }}
+          animate={{ 
+            // Movimiento diagonal exacto basado en la lista de 8
+            x: [0, -LOOP_DISTANCE], 
+            y: [0, LOOP_DISTANCE] 
+          }}
+          transition={{
+            repeat: Infinity,
+            duration: 30, 
+            ease: "linear"
+          }}
+          style={{
+            display: 'grid',
+            gridTemplateColumns: `repeat(${COLS}, ${UNIT}px)`,
+            gridTemplateRows: `repeat(${ROWS}, ${UNIT}px)`,
+            width: `${WIDTH}px`,
+            height: `${HEIGHT}px`,
+            position: 'absolute',
+            left: '50%',
+            top: '50%',
+            // Ajuste fino para centrar el grid antes de la rotación
+            marginLeft: `-${WIDTH / 2}px`,
+            marginTop: `-${HEIGHT / 2}px`,
+          }}
+          className="opacity-60 rotate-[-15deg]"
+        >
+          {[...Array(COLS * ROWS)].map((_, i) => {
+            const row = Math.floor(i / COLS);
+            
+            // EL SECRETO DEL DESORDEN:
+            // Desplazamos el inicio de cada fila para que no se vean columnas repetidas
+            // Pero usamos un patrón que se repite cada 2 filas para no romper el bucle de 8
+            const rowOffsets = [0, 2, 4, 6]; 
+            const iconIndex = (i + rowOffsets[row % 4]) % iconList.length;
+            
+            const Icon = iconList[iconIndex];
+
+            return (
+              <div key={i} className="flex items-center justify-center w-full h-full">
+                <Icon size={ICON_SIZE} className="text-zinc-500" strokeWidth={1.5} />
+              </div>
+            );
+          })}
+        </motion.div>
+        
+        {/* Máscara radial de Zave */}
+        <div className="absolute inset-0 bg-[radial-gradient(circle_at_center,transparent_0%,black_65%)]" />
+      </div>
+
+      {/* BLOQUE DE REGISTRO */}
+      <div className="w-full max-w-md relative z-10">
 
         <div className="mb-10 text-center">
           <h1 className="text-5xl md:text-6xl font-black tracking-tighter text-white">
