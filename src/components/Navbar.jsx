@@ -243,32 +243,6 @@ export default function Navbar() {
             Productos
           </Link>
 
-          {/* NUEVO: Link Revisión en menú desplegable */}
-          {(profile?.role === 'editor' || profile?.role === 'admin') && (
-            <Link
-              to="/admin/review"
-              onClick={() => setMenuOpen(false)}
-              className={`flex items-center gap-2 px-4 py-3 rounded-lg text-sm font-medium transition-colors ${
-                isActive('/admin/review') ? 'bg-yellow-400 text-black' : 'text-zinc-400 hover:text-white hover:bg-zinc-800'
-              }`}
-            >
-              <Inbox size={16} />
-              Revisión de Precios
-            </Link>
-          )}
-
-          {/* Link Tickets en menú desplegable */}
-          <Link
-            to="/scanner"
-            onClick={() => setMenuOpen(false)}
-            className={`flex items-center gap-2 px-4 py-3 rounded-lg text-sm font-medium transition-colors ${
-              isActive('/scanner') ? 'bg-yellow-400 text-black' : 'text-zinc-400 hover:text-white hover:bg-zinc-800'
-            }`}
-          >
-            <TicketCheck size={16} />
-            Importar Ticket
-          </Link>
-
           {(profile?.role === 'editor' || profile?.role === 'admin') && (
             <>
               <Link
@@ -303,6 +277,32 @@ export default function Navbar() {
               Usuarios
             </Link>
           )}
+
+          {/* NUEVO: Link Revisión en menú desplegable */}
+          {(profile?.role === 'editor' || profile?.role === 'admin') && (
+            <Link
+              to="/admin/review"
+              onClick={() => setMenuOpen(false)}
+              className={`flex items-center gap-2 px-4 py-3 rounded-lg text-sm font-medium transition-colors ${
+                isActive('/admin/review') ? 'bg-yellow-400 text-black' : 'text-zinc-400 hover:text-white hover:bg-zinc-800'
+              }`}
+            >
+              <Inbox size={16} />
+              Revisión de Precios
+            </Link>
+          )}
+
+          {/* Link Tickets en menú desplegable */}
+          <Link
+            to="/scanner"
+            onClick={() => setMenuOpen(false)}
+            className={`flex items-center gap-2 px-4 py-3 rounded-lg text-sm font-medium transition-colors ${
+              isActive('/scanner') ? 'bg-yellow-400 text-black' : 'text-zinc-400 hover:text-white hover:bg-zinc-800'
+            }`}
+          >
+            <TicketCheck size={16} />
+            Importar Ticket
+          </Link>
 
           {/* Carrito en el menú móvil */}
           <Link
